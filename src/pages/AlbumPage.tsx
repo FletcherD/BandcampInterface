@@ -68,7 +68,7 @@ export default function AlbumPage() {
 
             <BandInfo band={album.band} />
 
-            {album.tags.length > 0 && (
+            {album.tags && album.tags.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">
                   Tags

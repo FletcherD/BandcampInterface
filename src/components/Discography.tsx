@@ -7,6 +7,11 @@ interface DiscographyProps {
 }
 
 export default function Discography({ items }: DiscographyProps) {
+  // Convert item_type to tralbum_type format ('album' -> 'a', 'track' -> 't')
+  const getTrablumType = (itemType: string) => {
+    return itemType === 'album' ? 'a' : 't';
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Discography</h2>
@@ -14,7 +19,7 @@ export default function Discography({ items }: DiscographyProps) {
         {items.map((item) => (
           <Link
             key={item.item_id}
-            to={`/album/${item.band_id}/${item.item_type}/${item.item_id}`}
+            to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}
             className="group cursor-pointer"
           >
             <div className="relative aspect-square mb-2 overflow-hidden rounded-lg shadow-md">
