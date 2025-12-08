@@ -1,13 +1,11 @@
+import { useParams } from 'react-router-dom';
 import { useBandDetails } from '../api/queries';
 import { getBandImageUrl } from '../api/bandcamp';
 import Discography from '../components/Discography';
 
-interface BandPageProps {
-  bandId: number;
-}
-
-export default function BandPage({ bandId }: BandPageProps) {
-  const { data: band, isLoading, error } = useBandDetails({ band_id: bandId });
+export default function BandPage() {
+  const { bandId } = useParams<{ bandId: string }>();
+  const { data: band, isLoading, error } = useBandDetails({ band_id: Number(bandId) });
 
   if (isLoading) {
     return (

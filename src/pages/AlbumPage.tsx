@@ -1,3 +1,4 @@
+import { useParams } from 'react-router-dom';
 import { useAlbumDetails } from '../api/queries';
 import { formatReleaseDate } from '../api/bandcamp';
 import AlbumArt from '../components/AlbumArt';
@@ -5,17 +6,17 @@ import TrackList from '../components/TrackList';
 import BandInfo from '../components/BandInfo';
 import TagList from '../components/TagList';
 
-interface AlbumPageProps {
-  bandId: number;
-  tralbumType: string;
-  tralbumId: number;
-}
+export default function AlbumPage() {
+  const { bandId, tralbumType, tralbumId } = useParams<{
+    bandId: string;
+    tralbumType: string;
+    tralbumId: string;
+  }>();
 
-export default function AlbumPage({ bandId, tralbumType, tralbumId }: AlbumPageProps) {
   const { data: album, isLoading, error } = useAlbumDetails({
-    band_id: bandId,
-    tralbum_type: tralbumType,
-    tralbum_id: tralbumId,
+    band_id: Number(bandId),
+    tralbum_type: tralbumType!,
+    tralbum_id: Number(tralbumId),
   });
 
   if (isLoading) {
