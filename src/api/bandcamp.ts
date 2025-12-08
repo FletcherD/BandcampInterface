@@ -1,4 +1,4 @@
-import type { AlbumDetails, AlbumDetailsRequest } from '../types/bandcamp';
+import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest } from '../types/bandcamp';
 
 // Use relative path to leverage Vite's proxy in development
 const BANDCAMP_API_BASE = '/api';
@@ -16,6 +16,24 @@ export async function fetchAlbumDetails(
 
   if (!response.ok) {
     throw new Error(`Failed to fetch album details: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchBandDetails(
+  request: BandDetailsRequest
+): Promise<BandDetails> {
+  const response = await fetch(`${BANDCAMP_API_BASE}/mobile/24/band_details`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch band details: ${response.statusText}`);
   }
 
   return response.json();

@@ -93,3 +93,36 @@ export interface AlbumDetailsRequest {
   tralbum_type: string;
   tralbum_id: number;
 }
+
+export interface BandSite {
+  url: string;
+  title: string;
+}
+
+export interface DiscographyItem {
+  item_id: number;
+  item_type: string;
+  artist_name: string;
+  band_name: string;
+  title: string;
+  art_id: number;
+  release_date: string;
+  is_purchasable: boolean;
+  band_id: number;
+}
+
+export interface BandDetails {
+  id: number;
+  name: string;
+  bio_image_id: number;
+  bio_image_width: number;
+  bio_image_height: number;
+  bio: string;
+  bandcamp_url: string;
+  sites: BandSite[];
+  discography: DiscographyItem[];
+}
+
+export interface BandDetailsRequest {
+  band_id: number;
+}

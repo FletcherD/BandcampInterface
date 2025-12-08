@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import AlbumPage from './pages/AlbumPage';
+import BandPage from './pages/BandPage';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -10,21 +10,13 @@ const queryClient = new QueryClient({
   },
 });
 
-// Test album data from API_ENDPOINTS.md
-const TEST_ALBUM = {
-  bandId: 2197988008,
-  tralbumType: 'a',
-  tralbumId: 3616265308,
-};
+// Test band data - Constellation Tatsu
+const TEST_BAND_ID = 2197988008;
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AlbumPage
-        bandId={TEST_ALBUM.bandId}
-        tralbumType={TEST_ALBUM.tralbumType}
-        tralbumId={TEST_ALBUM.tralbumId}
-      />
+      <BandPage bandId={TEST_BAND_ID} />
     </QueryClientProvider>
   );
 }
