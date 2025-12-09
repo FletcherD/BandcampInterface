@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAlbumDetails, fetchBandDetails } from './bandcamp';
-import type { AlbumDetailsRequest, BandDetailsRequest } from '../types/bandcamp';
+import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection } from './bandcamp';
+import type { AlbumDetailsRequest, BandDetailsRequest, FanCollectionRequest } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
   return useQuery({
@@ -14,6 +14,14 @@ export function useBandDetails(request: BandDetailsRequest) {
   return useQuery({
     queryKey: ['band', request.band_id],
     queryFn: () => fetchBandDetails(request),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+export function useFanCollection(request: FanCollectionRequest) {
+  return useQuery({
+    queryKey: ['collection', request.fan_id],
+    queryFn: () => fetchFanCollection(request),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

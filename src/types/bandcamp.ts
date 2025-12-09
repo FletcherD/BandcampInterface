@@ -126,3 +126,38 @@ export interface BandDetails {
 export interface BandDetailsRequest {
   band_id: number;
 }
+
+export interface CollectionTrack {
+  track_id: number;
+  track_license_id: number | null;
+  title: string;
+  track_num: number;
+  streaming_url: StreamingUrl;
+  duration: number;
+  encodings_id: number;
+  album_title: string;
+  band_name: string;
+  art_id: number;
+  album_id: number;
+  is_streamable: boolean;
+  has_lyrics: boolean | null;
+  is_set_price: boolean;
+  price: number;
+  has_digital_download: boolean | null;
+  merch_ids: number[] | null;
+  merch_sold_out: boolean | null;
+  currency: string;
+  require_email: boolean | null;
+  is_purchasable: boolean;
+  band_id: number;
+  label: string | null;
+  label_id: number | null;
+}
+
+export interface FanCollection {
+  track_list: CollectionTrack[];
+}
+
+export interface FanCollectionRequest {
+  fan_id: number;
+}
