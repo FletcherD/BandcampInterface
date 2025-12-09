@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useFanCollection } from '../api/queries';
 import Discography from '../components/Discography';
 import type { DiscographyItem } from '../types/bandcamp';
@@ -7,33 +7,64 @@ import type { DiscographyItem } from '../types/bandcamp';
 const TEST_FAN_ID = 621507;
 
 export default function CollectionPage() {
-  const { data: collection, isLoading, error } = useFanCollection({ fan_id: TEST_FAN_ID });
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useFanCollection(TEST_FAN_ID);
 
-  // Convert collection tracks to DiscographyItem format
-  // Group tracks by album_id and create one item per album
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Convert collection items to DiscographyItem format
   const albums = useMemo(() => {
-    if (!collection?.track_list) return [];
+    if (!data?.pages) return [];
 
-    const albumMap = new Map<number, DiscographyItem>();
+    const items: DiscographyItem[] = [];
 
-    collection.track_list.forEach((track) => {
-      if (!albumMap.has(track.album_id)) {
-        albumMap.set(track.album_id, {
-          item_id: track.album_id,
-          item_type: 'album',
-          artist_name: track.band_name,
-          band_name: track.label || track.band_name,
-          title: track.album_title,
-          art_id: track.art_id,
-          release_date: '', // Not available in collection API
-          is_purchasable: track.is_purchasable,
-          band_id: track.band_id,
+    data.pages.forEach((page) => {
+      page.items.forEach((item) => {
+        items.push({
+          item_id: item.tralbum_id,
+          item_type: item.item_type,
+          artist_name: item.band_name,
+          band_name: item.band_name,
+          title: item.item_title,
+          art_id: item.item_art_id,
+          release_date: item.added,
+          is_purchasable: true,
+          band_id: item.band_id,
         });
-      }
+      });
     });
 
-    return Array.from(albumMap.values());
-  }, [collection]);
+    return items;
+  }, [data]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
     return (
@@ -66,9 +97,19 @@ export default function CollectionPage() {
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-4xl font-bold mb-8">My Collection</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">
-          {albums.length} album{albums.length !== 1 ? 's' : ''} in your collection
+          {albums.length} item{albums.length !== 1 ? 's' : ''} in your collection
+          {hasNextPage && ' (loading more...)'}
         </p>
         <Discography items={albums} />
+
+        {/* Infinite scroll trigger */}
+        <div ref={observerTarget} className="h-20 flex items-center justify-center">
+          {isFetchingNextPage && (
+            <div className="text-gray-500 dark:text-gray-400">
+              Loading more...
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

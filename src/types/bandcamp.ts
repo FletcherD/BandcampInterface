@@ -154,10 +154,28 @@ export interface CollectionTrack {
   label_id: number | null;
 }
 
+export interface CollectionItem {
+  fan_id: number;
+  item_id: number;
+  item_type: string;
+  band_id: number;
+  tralbum_id: number;
+  tralbum_type: string;
+  item_title: string;
+  item_art_id: number;
+  band_name: string;
+  token: string;
+  purchased?: string;
+  added: string;
+  // ... other fields available but not critical
+}
+
 export interface FanCollection {
+  items: CollectionItem[];
   track_list: CollectionTrack[];
 }
 
 export interface FanCollectionRequest {
   fan_id: number;
+  older_than?: string;
 }
