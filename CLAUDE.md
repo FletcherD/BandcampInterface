@@ -333,7 +333,7 @@ The `Discography` component is a polymorphic component that supports two differe
    - Responsive grid layout (2-5 columns based on screen size)
    - Card-based design with album artwork
    - Hover effects with image scaling
-   - Displays title, artist, and year
+   - Displays title, artist, and year (discography mode only - collection mode omits year since release dates aren't available)
 
 2. **Table View**:
    - Compact tabular layout

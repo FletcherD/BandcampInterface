@@ -117,9 +117,9 @@ export default function Discography(props: DiscographyProps) {
       {viewMode === 'grid' && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {sortedItems.map((item) => {
-            const dateToShow = mode === 'discography'
-              ? (item as DiscographyItem).release_date
-              : (item as CollectionDisplayItem).added_date;
+            // Only show release year in grid view for discography mode
+            // Collection mode doesn't have release dates, so don't show anything
+            const showYear = mode === 'discography' && (item as DiscographyItem).release_date;
 
             return (
               <Link
@@ -139,9 +139,9 @@ export default function Discography(props: DiscographyProps) {
                   <div className="text-gray-600 dark:text-gray-400 truncate">
                     {item.artist_name}
                   </div>
-                  {dateToShow && (
+                  {showYear && (
                     <div className="text-xs text-gray-500 dark:text-gray-500">
-                      {new Date(dateToShow).getFullYear()}
+                      {new Date((item as DiscographyItem).release_date).getFullYear()}
                     </div>
                   )}
                 </div>
