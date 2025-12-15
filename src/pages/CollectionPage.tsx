@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { useFanCollection } from '../api/queries';
 import Discography from '../components/Discography';
-import type { DiscographyItem } from '../types/bandcamp';
+import type { CollectionDisplayItem } from '../types/bandcamp';
 
 // Test fan_id from API_ENDPOINTS.md
 const TEST_FAN_ID = 621507;
@@ -18,11 +18,11 @@ export default function CollectionPage() {
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  // Convert collection items to DiscographyItem format
+  // Convert collection items to CollectionDisplayItem format
   const albums = useMemo(() => {
     if (!data?.pages) return [];
 
-    const items: DiscographyItem[] = [];
+    const items: CollectionDisplayItem[] = [];
 
     data.pages.forEach((page) => {
       page.items.forEach((item) => {
@@ -33,7 +33,8 @@ export default function CollectionPage() {
           band_name: item.band_name,
           title: item.item_title,
           art_id: item.item_art_id,
-          release_date: item.added,
+          added_date: item.added,
+          purchased_date: item.purchased,
           is_purchasable: true,
           band_id: item.band_id,
         });
@@ -100,7 +101,7 @@ export default function CollectionPage() {
           {albums.length} item{albums.length !== 1 ? 's' : ''} in your collection
           {hasNextPage && ' (loading more...)'}
         </p>
-        <Discography items={albums} />
+        <Discography mode="collection" items={albums} />
 
         {/* Infinite scroll trigger */}
         <div ref={observerTarget} className="h-20 flex items-center justify-center">

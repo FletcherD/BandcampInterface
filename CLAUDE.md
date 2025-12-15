@@ -118,7 +118,8 @@ const getTrablumType = (itemType: string) => {
 - Uses IntersectionObserver for automatic loading
 - Shows total item count and loading status
 - Switchable views: grid or table
-- Sorting by title, artist name, or release date (table view only)
+- Sorting by title, artist name, or date added (table view only)
+- Shows when items were added to collection, not release dates (collection API doesn't include release dates)
 
 ### Band Page
 
@@ -297,15 +298,36 @@ All API response types are defined in `src/types/bandcamp.ts`:
 - `AlbumDetails` - Complete album/track information
 - `BandDetails` - Band information with discography
 - `Track` - Individual track information
-- `DiscographyItem` - Album/track in discography list
+- `DiscographyItem` - Album/track in band discography list (includes `release_date`)
+- `CollectionDisplayItem` - Album/track in user's collection (includes `added_date` and optional `purchased_date`, no release_date)
 - `FanCollectionResponse` - Paginated collection response with items and tokens
-- `CollectionItem` - Individual item in a fan's collection
+- `CollectionItem` - Raw individual item from the collection API
 - `Tag` - Genre/location tag
 - `BandSite` - Social media link
 
+**Important Data Structure Differences:**
+- **Band Discography** (`DiscographyItem`): Includes `release_date` (when the album was released)
+- **User Collection** (`CollectionDisplayItem`): Includes `added_date` (when user added to collection) and optional `purchased_date`, but NOT `release_date` (collection API doesn't return this)
+
 ### Discography Component Features
 
-The `Discography` component now supports two view modes:
+The `Discography` component is a polymorphic component that supports two different display modes and two view types.
+
+**Display Modes:**
+
+1. **Discography Mode** (`mode="discography"`):
+   - Used on BandPage to display band's releases
+   - Accepts `DiscographyItem[]` with `release_date` field
+   - Shows "Year" column (release year only)
+   - Sorts by title, artist, or release date
+
+2. **Collection Mode** (`mode="collection"`):
+   - Used on CollectionPage to display user's collection
+   - Accepts `CollectionDisplayItem[]` with `added_date` and optional `purchased_date` fields
+   - Shows "Date Added" column (full date format)
+   - Sorts by title, artist, or date added
+
+**View Types (available in both modes):**
 
 1. **Grid View** (default):
    - Responsive grid layout (2-5 columns based on screen size)
@@ -315,16 +337,18 @@ The `Discography` component now supports two view modes:
 
 2. **Table View**:
    - Compact tabular layout
-   - Sortable columns: Title, Artist, Year
+   - Sortable columns adapt to mode:
+     - Discography: Title, Artist, Year
+     - Collection: Title, Artist, Date Added
    - Click column headers to toggle sort direction
    - Visual indicators for current sort field and direction (↑↓)
    - Smaller thumbnails for efficient space usage
 
 Both views:
-- Use the same data source (`DiscographyItem[]`)
 - Support client-side sorting
 - Maintain sort state when switching views
 - Link to album detail pages
+- Adapt date display based on mode
 
 ### Infinite Scroll Implementation
 

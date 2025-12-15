@@ -111,6 +111,19 @@ export interface DiscographyItem {
   band_id: number;
 }
 
+export interface CollectionDisplayItem {
+  item_id: number;
+  item_type: string;
+  artist_name: string;
+  band_name: string;
+  title: string;
+  art_id: number;
+  added_date: string;
+  purchased_date?: string;
+  is_purchasable: boolean;
+  band_id: number;
+}
+
 export interface BandDetails {
   id: number;
   name: string;
