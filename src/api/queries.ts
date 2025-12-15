@@ -6,7 +6,6 @@ export function useAlbumDetails(request: AlbumDetailsRequest) {
   return useQuery({
     queryKey: ['album', request.tralbum_id],
     queryFn: () => fetchAlbumDetails(request),
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 
@@ -14,7 +13,6 @@ export function useBandDetails(request: BandDetailsRequest) {
   return useQuery({
     queryKey: ['band', request.band_id],
     queryFn: () => fetchBandDetails(request),
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 
@@ -28,6 +26,5 @@ export function useFanCollection(fanId: number) {
       return lastItem?.token;
     },
     initialPageParam: undefined as string | undefined,
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }

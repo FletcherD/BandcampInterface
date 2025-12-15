@@ -177,27 +177,68 @@ formatReleaseDate(timestamp: number): string
 
 ### Configuration
 
+The application uses React Query with aggressive caching and localStorage persistence:
+
 ```typescript
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours - keep in cache
+      staleTime: Infinity, // Never refetch (album data rarely changes)
     },
   },
 });
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'bandcamp-cache',
+});
+
+// Wrap app with PersistQueryClientProvider
+<PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+  {/* app routes */}
+</PersistQueryClientProvider>
+```
+
+### Caching Strategy
+
+**Why aggressive caching?**
+- Album/track data is mostly static (rarely changes after release)
+- Reduces API load on Bandcamp's servers
+- Instant navigation to previously viewed albums
+- Better user experience when browsing collections
+
+**Cache behavior:**
+- `staleTime: Infinity` - Data never considered stale, won't refetch unless manually invalidated
+- `gcTime: 24 hours` - Unused data stays in memory for 24 hours before garbage collection
+- **Persistent cache** - Stored in localStorage as `bandcamp-cache` key
+- Survives page reloads and browser restarts
+- Each album/band is ~5-50KB of JSON data
+
+**Cached data includes:**
+- Album/track details (title, tracks, artwork IDs, credits, tags)
+- Band details (bio, discography, social links)
+- Collection pages (infinite scroll results)
+
+**Cache invalidation:**
+To clear the cache manually (if needed):
+```javascript
+localStorage.removeItem('bandcamp-cache')
 ```
 
 ### Custom Hooks
 
+All hooks inherit the global caching configuration (Infinity staleTime, 24hr gcTime):
+
 ```typescript
-// Fetch album/track details
+// Fetch album/track details (cached permanently)
 useAlbumDetails({ band_id, tralbum_type, tralbum_id })
 
-// Fetch band details
+// Fetch band details (cached permanently)
 useBandDetails({ band_id })
 
-// Fetch fan collection with infinite scroll pagination
+// Fetch fan collection with infinite scroll pagination (cached permanently)
 useFanCollection(fan_id)
 // Returns: { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage }
 ```
