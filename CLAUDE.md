@@ -29,10 +29,11 @@ src/
 │   ├── TrackList.tsx        # Track listing with durations
 │   ├── BandInfo.tsx         # Band/label info card (clickable)
 │   ├── TagList.tsx          # Genre/location tags display
-│   └── Discography.tsx      # Grid of albums/releases
+│   └── Discography.tsx      # Grid/table view with sorting
 ├── pages/
 │   ├── AlbumPage.tsx        # Album/track detail page
-│   └── BandPage.tsx         # Band detail page with discography
+│   ├── BandPage.tsx         # Band detail page with discography
+│   └── CollectionPage.tsx   # User collection with infinite scroll
 ├── App.tsx                  # Router setup & React Query provider
 └── main.tsx                 # Application entry point
 
@@ -54,6 +55,14 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
    - Fetches band information and complete discography
    - Parameters:
      - `band_id`: Artist ID (number)
+
+3. **Fan Collection**: `POST /api/mobile/24/collection_items`
+   - Fetches a user's Bandcamp collection with pagination
+   - Parameters:
+     - `fan_id`: User/fan ID (number)
+     - `older_than`: Pagination token (string, optional)
+     - `count`: Number of items per page (default: 40)
+   - Returns paginated results with tokens for infinite scroll
 
 ### CORS Handling
 
@@ -78,16 +87,17 @@ The API client uses relative paths (`/api/...`) which Vite proxies to `https://b
 
 ### Routes
 
-- `/` - Redirects to the default band page (Constellation Tatsu)
+- `/` - Collection page (user's Bandcamp collection)
 - `/band/:bandId` - Band details page with discography
 - `/album/:bandId/:tralbumType/:tralbumId` - Album or track details page
 
 ### Navigation Flow
 
-1. **Band Page → Album Page**: Click any album in the discography grid
-2. **Album Page → Band Page**: Click the band info card
-3. All navigation uses React Router's `Link` component for client-side routing
-4. URLs are shareable and bookmarkable
+1. **Collection Page → Album Page**: Click any album in the collection
+2. **Band Page → Album Page**: Click any album in the discography grid/table
+3. **Album Page → Band Page**: Click the band info card
+4. All navigation uses React Router's `Link` component for client-side routing
+5. URLs are shareable and bookmarkable
 
 ### Type Conversion
 
@@ -101,11 +111,23 @@ const getTrablumType = (itemType: string) => {
 
 ## Key Features
 
+### Collection Page
+
+- Display user's Bandcamp collection
+- Infinite scroll pagination for loading more items
+- Uses IntersectionObserver for automatic loading
+- Shows total item count and loading status
+- Switchable views: grid or table
+- Sorting by title, artist name, or release date (table view only)
+
 ### Band Page
 
 - Band image and bio
 - Social media links (Instagram, Twitter, Facebook, etc.)
-- Complete discography grid with:
+- Complete discography with dual view modes:
+  - **Grid View**: Card-based layout with artwork thumbnails
+  - **Table View**: Sortable table with columns for title, artist, and year
+- Both views include:
   - Album/track artwork
   - Title and artist name
   - Release year
@@ -174,6 +196,10 @@ useAlbumDetails({ band_id, tralbum_type, tralbum_id })
 
 // Fetch band details
 useBandDetails({ band_id })
+
+// Fetch fan collection with infinite scroll pagination
+useFanCollection(fan_id)
+// Returns: { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage }
 ```
 
 ## Development Setup
@@ -231,8 +257,66 @@ All API response types are defined in `src/types/bandcamp.ts`:
 - `BandDetails` - Band information with discography
 - `Track` - Individual track information
 - `DiscographyItem` - Album/track in discography list
+- `FanCollectionResponse` - Paginated collection response with items and tokens
+- `CollectionItem` - Individual item in a fan's collection
 - `Tag` - Genre/location tag
 - `BandSite` - Social media link
+
+### Discography Component Features
+
+The `Discography` component now supports two view modes:
+
+1. **Grid View** (default):
+   - Responsive grid layout (2-5 columns based on screen size)
+   - Card-based design with album artwork
+   - Hover effects with image scaling
+   - Displays title, artist, and year
+
+2. **Table View**:
+   - Compact tabular layout
+   - Sortable columns: Title, Artist, Year
+   - Click column headers to toggle sort direction
+   - Visual indicators for current sort field and direction (↑↓)
+   - Smaller thumbnails for efficient space usage
+
+Both views:
+- Use the same data source (`DiscographyItem[]`)
+- Support client-side sorting
+- Maintain sort state when switching views
+- Link to album detail pages
+
+### Infinite Scroll Implementation
+
+The Collection Page uses React Query's `useInfiniteQuery` with IntersectionObserver for seamless pagination:
+
+```typescript
+// React Query infinite query setup
+useInfiniteQuery({
+  queryKey: ['collection', fanId],
+  queryFn: ({ pageParam }) => fetchFanCollection({ fan_id: fanId, older_than: pageParam }),
+  getNextPageParam: (lastPage) => lastPage.items[lastPage.items.length - 1]?.token,
+  initialPageParam: undefined,
+})
+
+// IntersectionObserver for automatic loading
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    { threshold: 0.1 }
+  );
+  // Observe the trigger element at bottom of page
+}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+```
+
+Benefits:
+- Smooth, automatic loading as user scrolls
+- No "Load More" button needed
+- Efficient memory usage (only loads visible data)
+- Works seamlessly with React Query caching
 
 ## Tailwind CSS v4
 
@@ -267,22 +351,32 @@ className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
 Potential features to add:
 - Search functionality
 - Audio player for streaming tracks
-- User collection/wishlist views
 - Genre/tag browsing
 - Artist recommendations
 - Responsive mobile optimization
-- Infinite scroll for large discographies
 - Keyboard navigation
 - Loading skeletons instead of basic "Loading..." text
+- Filter/search within collection
+- Collection statistics and insights
+- Export collection data
+- Multiple collection view modes (compact, detailed, etc.)
 
 ## Testing
 
-To test with a different band or album:
+### Testing Different Content
 
+**Band/Album Pages:**
 1. Find a Bandcamp URL (e.g., https://artist.bandcamp.com)
 2. Use browser DevTools to inspect API calls and get `band_id`
-3. Update the `TEST_BAND_ID` constant in `App.tsx`
-4. Or navigate directly to `/band/{band_id}` in the browser
+3. Navigate directly to `/band/{band_id}` in the browser
+
+**Collection Page:**
+1. The default collection uses `TEST_FAN_ID = 621507` in `CollectionPage.tsx`
+2. To test with a different user's collection:
+   - Find a Bandcamp user profile
+   - Inspect API calls in DevTools to get their `fan_id`
+   - Update the `TEST_FAN_ID` constant in `CollectionPage.tsx`
+3. Test infinite scroll by scrolling to the bottom of the page
 
 ## Notes
 
