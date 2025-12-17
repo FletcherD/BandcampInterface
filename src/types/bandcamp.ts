@@ -120,8 +120,10 @@ export interface CollectionDisplayItem {
   art_id: number;
   added_date: string;
   purchased_date?: string;
+  release_date?: string;  // Fetched from album details in background
   is_purchasable: boolean;
   band_id: number;
+  tralbum_type: string;  // Need this to fetch album details
 }
 
 export interface BandDetails {

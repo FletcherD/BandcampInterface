@@ -114,12 +114,18 @@ const getTrablumType = (itemType: string) => {
 ### Collection Page
 
 - Display user's Bandcamp collection
-- Infinite scroll pagination for loading more items
-- Uses IntersectionObserver for automatic loading
-- Shows total item count and loading status
+- **Auto-loads all collection items** on page load (no manual pagination)
+- **Status bar** showing real-time progress:
+  - Collection items loaded
+  - Album details being fetched in background
+  - Visual spinner during active operations
 - Switchable views: grid or table
-- Sorting by title, artist name, or date added (table view only)
-- Shows when items were added to collection, not release dates (collection API doesn't include release dates)
+- Sorting by title, artist name, release date, or date added (table view only)
+- **Background Data Enrichment**: Automatically fetches album details for each collection item to get release dates
+  - Initial load shows collection without release dates
+  - Release dates progressively fill in as album details are fetched in background
+  - Uses React Query caching - data persists across page reloads
+  - Each album is only fetched once and cached permanently
 
 ### Band Page
 
@@ -242,7 +248,39 @@ useBandDetails({ band_id })
 // Fetch fan collection with infinite scroll pagination (cached permanently)
 useFanCollection(fan_id)
 // Returns: { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage }
+
+// Enrich collection items with album details in background
+useEnrichedCollectionItems(items: CollectionDisplayItem[])
+// Returns: { items: CollectionDisplayItem[], stats: { total, pending, fetching, loaded } }
+// - items: Enriched collection items with release_date field populated from album details
+// - stats: Object tracking background fetch progress
+// Uses React Query's useQueries to fetch all album details in parallel
+// Each query is cached, so subsequent renders don't re-fetch
 ```
+
+### Background Data Enrichment
+
+The `useEnrichedCollectionItems` hook implements progressive enhancement for collection data:
+
+**How it works:**
+1. CollectionPage initially renders with basic collection data (no release dates)
+2. `useEnrichedCollectionItems` triggers background queries for each album's details
+3. As album details load, release dates are merged into collection items
+4. React re-renders progressively as data arrives
+5. All data is cached in localStorage, so subsequent visits are instant
+
+**Benefits:**
+- Fast initial render (doesn't wait for album details)
+- Progressive enhancement (UI updates as data loads)
+- Efficient caching (each album fetched only once)
+- Persistent across sessions (stored in localStorage)
+- No loading spinners needed - data appears organically
+
+**Performance:**
+- Uses React Query's `useQueries` for parallel fetching
+- Limited to 1 retry per failed request
+- Queries are marked as background enhancements (don't block UI)
+- Cached with `staleTime: Infinity` (permanent cache)
 
 ## Development Setup
 
@@ -307,7 +345,7 @@ All API response types are defined in `src/types/bandcamp.ts`:
 
 **Important Data Structure Differences:**
 - **Band Discography** (`DiscographyItem`): Includes `release_date` (when the album was released)
-- **User Collection** (`CollectionDisplayItem`): Includes `added_date` (when user added to collection) and optional `purchased_date`, but NOT `release_date` (collection API doesn't return this)
+- **User Collection** (`CollectionDisplayItem`): Includes `added_date` (when user added to collection), optional `purchased_date`, and optional `release_date` (fetched in background from album details API)
 
 ### Discography Component Features
 
@@ -323,9 +361,10 @@ The `Discography` component is a polymorphic component that supports two differe
 
 2. **Collection Mode** (`mode="collection"`):
    - Used on CollectionPage to display user's collection
-   - Accepts `CollectionDisplayItem[]` with `added_date` and optional `purchased_date` fields
-   - Shows "Date Added" column (full date format)
-   - Sorts by title, artist, or date added
+   - Accepts `CollectionDisplayItem[]` with `added_date`, optional `purchased_date`, and optional `release_date` fields
+   - Table view shows both "Released" and "Added" columns
+   - Sorts by title, artist, release date, or date added
+   - Release dates are progressively filled in as background queries complete
 
 **View Types (available in both modes):**
 
@@ -333,13 +372,13 @@ The `Discography` component is a polymorphic component that supports two differe
    - Responsive grid layout (2-5 columns based on screen size)
    - Card-based design with album artwork
    - Hover effects with image scaling
-   - Displays title, artist, and year (discography mode only - collection mode omits year since release dates aren't available)
+   - Displays title, artist, and year (both modes show release year when available)
 
 2. **Table View**:
    - Compact tabular layout
    - Sortable columns adapt to mode:
-     - Discography: Title, Artist, Year
-     - Collection: Title, Artist, Date Added
+     - Discography: Title, Artist, Year (release year)
+     - Collection: Title, Artist, Released (year), Added (full date)
    - Click column headers to toggle sort direction
    - Visual indicators for current sort field and direction (↑↓)
    - Smaller thumbnails for efficient space usage
@@ -350,37 +389,31 @@ Both views:
 - Link to album detail pages
 - Adapt date display based on mode
 
-### Infinite Scroll Implementation
+### Auto-Loading Collection Items
 
-The Collection Page uses React Query's `useInfiniteQuery` with IntersectionObserver for seamless pagination:
+The Collection Page automatically loads all collection items on initial load:
 
 ```typescript
-// React Query infinite query setup
-useInfiniteQuery({
-  queryKey: ['collection', fanId],
-  queryFn: ({ pageParam }) => fetchFanCollection({ fan_id: fanId, older_than: pageParam }),
-  getNextPageParam: (lastPage) => lastPage.items[lastPage.items.length - 1]?.token,
-  initialPageParam: undefined,
-})
-
-// IntersectionObserver for automatic loading
+// Auto-load all pages immediately
 useEffect(() => {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-    },
-    { threshold: 0.1 }
-  );
-  // Observe the trigger element at bottom of page
+  if (hasNextPage && !isFetchingNextPage) {
+    fetchNextPage();
+  }
 }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 ```
 
+This uses React Query's `useInfiniteQuery` which fetches pages sequentially until all collection items are loaded.
+
+**Status Bar:**
+- Shows real-time progress of collection loading
+- Displays number of album details being fetched in background
+- Includes animated spinner during active operations
+- Updates as `useEnrichedCollectionItems` stats change
+
 Benefits:
-- Smooth, automatic loading as user scrolls
-- No "Load More" button needed
-- Efficient memory usage (only loads visible data)
+- Immediate access to entire collection for sorting/filtering
+- Clear visibility into background operations
+- No need to scroll to load more items
 - Works seamlessly with React Query caching
 
 ## Tailwind CSS v4
