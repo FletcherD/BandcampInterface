@@ -89,7 +89,9 @@ export default function CollectionPage() {
       messages.push(`Loaded ${albums.length} collection item${albums.length !== 1 ? 's' : ''}`);
     }
 
-    if (stats.fetching > 0 || stats.pending > 0) {
+    if (stats.rateLimited > 0) {
+      messages.push(`⏳ Rate limited, waiting to retry ${stats.rateLimited} album${stats.rateLimited !== 1 ? 's' : ''}...`);
+    } else if (stats.fetching > 0 || stats.pending > 0) {
       messages.push(`Fetching details for ${stats.fetching + stats.pending} album${stats.fetching + stats.pending !== 1 ? 's' : ''}`);
     } else if (stats.loaded > 0) {
       messages.push(`Album details loaded (${stats.loaded}/${stats.total})`);

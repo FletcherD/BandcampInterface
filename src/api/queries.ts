@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection } from './bandcamp';
+import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, RateLimitError } from './bandcamp';
 import type { AlbumDetailsRequest, BandDetailsRequest, FanCollectionRequest, CollectionDisplayItem } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
@@ -37,15 +37,36 @@ export function useFanCollection(fanId: number) {
 export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
   // Fetch album details for each collection item
   const albumQueries = useQueries({
-    queries: items.map((item) => ({
+    queries: items.map((item, index) => ({
       queryKey: ['album', item.item_id],
-      queryFn: () => fetchAlbumDetails({
-        band_id: item.band_id,
-        tralbum_type: item.tralbum_type,
-        tralbum_id: item.item_id,
-      }),
-      // Don't retry failed requests aggressively
-      retry: 1,
+      queryFn: async () => {
+        // Add staggered delay to prevent overwhelming the API
+        // Each request waits a bit longer than the previous one
+        await new Promise(resolve => setTimeout(resolve, index * 100));
+        return fetchAlbumDetails({
+          band_id: item.band_id,
+          tralbum_type: item.tralbum_type,
+          tralbum_id: item.item_id,
+        });
+      },
+      // Retry up to 5 times for rate limit errors
+      retry: (failureCount, error) => {
+        // Retry rate limit errors up to 5 times
+        if (error instanceof RateLimitError && failureCount < 5) {
+          return true;
+        }
+        // Don't retry other errors
+        return false;
+      },
+      // Custom retry delay that respects retry-after header
+      retryDelay: (attemptIndex, error) => {
+        if (error instanceof RateLimitError) {
+          // Use the retry-after value from the API (in seconds), convert to ms
+          return error.retryAfter * 1000;
+        }
+        // Default exponential backoff for other errors
+        return Math.min(1000 * 2 ** attemptIndex, 30000);
+      },
       // These queries are background enhancements, so don't block on them
       staleTime: Infinity,
     })),
@@ -55,6 +76,9 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
   const pendingCount = albumQueries.filter(q => q.isPending).length;
   const fetchingCount = albumQueries.filter(q => q.isFetching).length;
   const loadedCount = albumQueries.filter(q => q.data).length;
+  const rateLimitedCount = albumQueries.filter(q =>
+    q.error instanceof RateLimitError && q.isError
+  ).length;
 
   // Merge album details into collection items
   const enrichedItems = items.map((item, index) => {
@@ -76,6 +100,7 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
       pending: pendingCount,
       fetching: fetchingCount,
       loaded: loadedCount,
+      rateLimited: rateLimitedCount,
     },
   };
 }

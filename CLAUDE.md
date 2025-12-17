@@ -83,6 +83,25 @@ server: {
 
 The API client uses relative paths (`/api/...`) which Vite proxies to `https://bandcamp.com/api/...` during development.
 
+### Error Handling
+
+All API functions include proper error handling for rate limiting:
+
+**Rate Limit Detection:**
+- Detects HTTP 429 responses
+- Extracts `retry-after` header (in seconds)
+- Throws custom `RateLimitError` with retry delay
+
+**Example:**
+```typescript
+if (response.status === 429) {
+  const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+  throw new RateLimitError(retryAfter);
+}
+```
+
+React Query automatically handles these errors and retries with the specified delay.
+
 ## Routing
 
 ### Routes
@@ -278,9 +297,16 @@ The `useEnrichedCollectionItems` hook implements progressive enhancement for col
 
 **Performance:**
 - Uses React Query's `useQueries` for parallel fetching
-- Limited to 1 retry per failed request
+- Staggered request timing (100ms delay between each request) to avoid rate limits
 - Queries are marked as background enhancements (don't block UI)
 - Cached with `staleTime: Infinity` (permanent cache)
+
+**Rate Limit Handling:**
+- Detects HTTP 429 (rate limit) responses from Bandcamp API
+- Respects `retry-after` header from API responses
+- Automatically retries up to 5 times with proper delays
+- Status bar shows "Rate limited, waiting to retry" message
+- Failed queries will retry after the specified wait period
 
 ## Development Setup
 

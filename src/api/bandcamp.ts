@@ -3,6 +3,17 @@ import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest
 // Use relative path to leverage Vite's proxy in development
 const BANDCAMP_API_BASE = '/api';
 
+// Custom error class for rate limiting
+export class RateLimitError extends Error {
+  retryAfter: number;
+
+  constructor(retryAfter: number) {
+    super(`Rate limited. Retry after ${retryAfter} seconds.`);
+    this.name = 'RateLimitError';
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function fetchAlbumDetails(
   request: AlbumDetailsRequest
 ): Promise<AlbumDetails> {
@@ -13,6 +24,11 @@ export async function fetchAlbumDetails(
     },
     body: JSON.stringify(request),
   });
+
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+    throw new RateLimitError(retryAfter);
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch album details: ${response.statusText}`);
@@ -32,6 +48,11 @@ export async function fetchBandDetails(
     body: JSON.stringify(request),
   });
 
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+    throw new RateLimitError(retryAfter);
+  }
+
   if (!response.ok) {
     throw new Error(`Failed to fetch band details: ${response.statusText}`);
   }
@@ -49,6 +70,11 @@ export async function fetchFanCollection(
     },
     body: JSON.stringify(request),
   });
+
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+    throw new RateLimitError(retryAfter);
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch fan collection: ${response.statusText}`);
