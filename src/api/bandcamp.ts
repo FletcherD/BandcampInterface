@@ -14,73 +14,180 @@ export class RateLimitError extends Error {
   }
 }
 
+/**
+ * Simple mutex to ensure only one request executes at a time.
+ */
+class Mutex {
+  private locked = false;
+  private waiting: (() => void)[] = [];
+
+  async acquire(): Promise<void> {
+    if (!this.locked) {
+      this.locked = true;
+      return;
+    }
+
+    return new Promise(resolve => {
+      this.waiting.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.waiting.length > 0) {
+      const resolve = this.waiting.shift()!;
+      resolve();
+    } else {
+      this.locked = false;
+    }
+  }
+}
+
+/**
+ * Global rate limiter that coordinates backoff across all requests to the same endpoint.
+ * Uses a mutex per endpoint to serialize requests and prevent race conditions.
+ */
+class RateLimiter {
+  private rateLimitedUntil: Map<string, number> = new Map();
+  private mutexes: Map<string, Mutex> = new Map();
+
+  /**
+   * Get or create a mutex for an endpoint.
+   */
+  private getMutex(endpoint: string): Mutex {
+    let mutex = this.mutexes.get(endpoint);
+    if (!mutex) {
+      mutex = new Mutex();
+      this.mutexes.set(endpoint, mutex);
+    }
+    return mutex;
+  }
+
+  /**
+   * Execute a request with proper serialization and rate limit handling.
+   * Ensures only one request per endpoint executes at a time.
+   */
+  async executeRequest<T>(endpoint: string, requestFn: () => Promise<T>): Promise<T> {
+    const mutex = this.getMutex(endpoint);
+
+    // Acquire mutex - only one request per endpoint at a time
+    await mutex.acquire();
+
+    try {
+      // Check if rate limited and wait
+      const until = this.rateLimitedUntil.get(endpoint);
+      if (until && Date.now() < until) {
+        const waitTime = until - Date.now();
+        console.log(`[RateLimiter] Waiting ${Math.ceil(waitTime / 1000)}s for ${endpoint} rate limit to clear`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+
+      // Execute the request
+      return await requestFn();
+    } finally {
+      // Always release the mutex
+      mutex.release();
+    }
+  }
+
+  /**
+   * Mark an endpoint as rate limited until the specified time.
+   * Called when a 429 response is received.
+   */
+  setRateLimited(endpoint: string, retryAfterSeconds: number): void {
+    const until = Date.now() + (retryAfterSeconds * 1000);
+    this.rateLimitedUntil.set(endpoint, until);
+    console.log(`[RateLimiter] ${endpoint} rate limited for ${retryAfterSeconds}s`);
+  }
+}
+
+// Global singleton rate limiter shared across all API calls
+const globalRateLimiter = new RateLimiter();
+
 export async function fetchAlbumDetails(
   request: AlbumDetailsRequest
 ): Promise<AlbumDetails> {
-  const response = await fetch(`${BANDCAMP_API_BASE}/mobile/24/tralbum_details`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
+  const endpoint = '/mobile/24/tralbum_details';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      // Mark this endpoint as rate limited so all other requests will wait
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch album details: ${response.statusText}`);
+    }
+
+    return response.json();
   });
-
-  if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
-    throw new RateLimitError(retryAfter);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch album details: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 export async function fetchBandDetails(
   request: BandDetailsRequest
 ): Promise<BandDetails> {
-  const response = await fetch(`${BANDCAMP_API_BASE}/mobile/24/band_details`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
+  const endpoint = '/mobile/24/band_details';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      // Mark this endpoint as rate limited so all other requests will wait
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch band details: ${response.statusText}`);
+    }
+
+    return response.json();
   });
-
-  if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
-    throw new RateLimitError(retryAfter);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch band details: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 export async function fetchFanCollection(
   request: FanCollectionRequest
 ): Promise<FanCollection> {
-  const response = await fetch(`${BANDCAMP_API_BASE}/mobile/24/fan_collection`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
+  const endpoint = '/mobile/24/fan_collection';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      // Mark this endpoint as rate limited so all other requests will wait
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch fan collection: ${response.statusText}`);
+    }
+
+    return response.json();
   });
-
-  if (response.status === 429) {
-    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
-    throw new RateLimitError(retryAfter);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch fan collection: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 // Helper to construct album art URL

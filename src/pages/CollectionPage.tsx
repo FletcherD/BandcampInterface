@@ -50,10 +50,17 @@ export default function CollectionPage() {
     return items;
   }, [data]);
 
-  // Enrich collection items with album details (release dates) in background
-  const { items: albums, stats } = useEnrichedCollectionItems(baseAlbums);
+  // Only start enriching album details AFTER all collection pages are loaded
+  const allCollectionPagesLoaded = !hasNextPage && !isFetchingNextPage;
+  const itemsToEnrich = allCollectionPagesLoaded ? baseAlbums : [];
+  const { items: enrichedAlbums, stats } = useEnrichedCollectionItems(itemsToEnrich);
 
-  if (isLoading) {
+  // Use enriched albums if available, otherwise use base albums
+  const albums = enrichedAlbums.length > 0 ? enrichedAlbums : baseAlbums;
+
+  // Only show loading screen if we have no data AND we're loading
+  // This allows cached data to display immediately
+  if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl">Loading collection...</div>
@@ -71,7 +78,7 @@ export default function CollectionPage() {
     );
   }
 
-  if (!albums.length) {
+  if (!albums.length && !isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-xl">No items in collection</div>
@@ -83,12 +90,14 @@ export default function CollectionPage() {
   const getStatusMessage = () => {
     const messages: string[] = [];
 
+    // Show collection loading progress with count
     if (isFetchingNextPage || hasNextPage) {
-      messages.push(`Loading collection items...`);
+      messages.push(`Loaded ${albums.length} collection item${albums.length !== 1 ? 's' : ''}...`);
     } else {
       messages.push(`Loaded ${albums.length} collection item${albums.length !== 1 ? 's' : ''}`);
     }
 
+    // Show album details fetching status
     if (stats.rateLimited > 0) {
       messages.push(`⏳ Rate limited, waiting to retry ${stats.rateLimited} album${stats.rateLimited !== 1 ? 's' : ''}...`);
     } else if (stats.fetching > 0 || stats.pending > 0) {

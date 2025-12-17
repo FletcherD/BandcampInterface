@@ -37,18 +37,13 @@ export function useFanCollection(fanId: number) {
 export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
   // Fetch album details for each collection item
   const albumQueries = useQueries({
-    queries: items.map((item, index) => ({
+    queries: items.map((item) => ({
       queryKey: ['album', item.item_id],
-      queryFn: async () => {
-        // Add staggered delay to prevent overwhelming the API
-        // Each request waits a bit longer than the previous one
-        await new Promise(resolve => setTimeout(resolve, index * 100));
-        return fetchAlbumDetails({
-          band_id: item.band_id,
-          tralbum_type: item.tralbum_type,
-          tralbum_id: item.item_id,
-        });
-      },
+      queryFn: () => fetchAlbumDetails({
+        band_id: item.band_id,
+        tralbum_type: item.tralbum_type,
+        tralbum_id: item.item_id,
+      }),
       // Retry up to 5 times for rate limit errors
       retry: (failureCount, error) => {
         // Retry rate limit errors up to 5 times

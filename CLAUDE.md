@@ -85,19 +85,37 @@ The API client uses relative paths (`/api/...`) which Vite proxies to `https://b
 
 ### Error Handling
 
-All API functions include proper error handling for rate limiting:
+All API functions include proper error handling for rate limiting with coordinated backoff:
 
-**Rate Limit Detection:**
-- Detects HTTP 429 responses
-- Extracts `retry-after` header (in seconds)
-- Throws custom `RateLimitError` with retry delay
+**Global Rate Limiter with Mutex:**
+- Singleton `RateLimiter` class coordinates all requests to the same endpoint
+- **Per-endpoint mutex** ensures requests execute one at a time (serialized)
+- Eliminates race conditions where multiple requests bypass rate limit checks
+- When ANY request gets a 429, subsequent requests wait for the rate limit to clear
+- Prevents "thundering herd" of failed requests
+
+**Rate Limit Flow:**
+1. Acquire mutex for endpoint (blocks if another request is in progress)
+2. Check if endpoint is rate limited and wait if necessary
+3. Execute the API request
+4. If 429 response: Mark endpoint as rate limited for all future requests
+5. Release mutex (allows next request to proceed)
+6. Throw `RateLimitError` which triggers React Query retry
 
 **Example:**
 ```typescript
-if (response.status === 429) {
-  const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
-  throw new RateLimitError(retryAfter);
-}
+return globalRateLimiter.executeRequest(endpoint, async () => {
+  const response = await fetch(...);
+
+  if (response.status === 429) {
+    const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+    // Mark endpoint as rate limited - all other waiting requests will now wait
+    globalRateLimiter.setRateLimited(endpoint, retryAfter);
+    throw new RateLimitError(retryAfter);
+  }
+
+  return response.json();
+});
 ```
 
 React Query automatically handles these errors and retries with the specified delay.
@@ -296,17 +314,20 @@ The `useEnrichedCollectionItems` hook implements progressive enhancement for col
 - No loading spinners needed - data appears organically
 
 **Performance:**
-- Uses React Query's `useQueries` for parallel fetching
-- Staggered request timing (100ms delay between each request) to avoid rate limits
+- Uses React Query's `useQueries` to trigger fetches for all albums
+- Requests are serialized by the global rate limiter's mutex (one at a time per endpoint)
 - Queries are marked as background enhancements (don't block UI)
 - Cached with `staleTime: Infinity` (permanent cache)
 
 **Rate Limit Handling:**
 - Detects HTTP 429 (rate limit) responses from Bandcamp API
+- **Mutex-based serialization**: Only one request per endpoint executes at a time
+- **Coordinated backoff**: When one request hits rate limit, ALL waiting requests pause
+- Prevents "thundering herd" and race conditions
 - Respects `retry-after` header from API responses
 - Automatically retries up to 5 times with proper delays
 - Status bar shows "Rate limited, waiting to retry" message
-- Failed queries will retry after the specified wait period
+- Console logs show coordination: "[RateLimiter] Waiting Xs for endpoint rate limit to clear"
 
 ## Development Setup
 
