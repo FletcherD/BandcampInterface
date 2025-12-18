@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Bandcamp Interface",
+  "version": "1.0.0",
+  "description": "Alternative interface for Bandcamp with enhanced collection management",
+  "permissions": [
+    "cookies",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.bandcamp.com/*"
+  ],
+  "action": {
+    "default_title": "Bandcamp Interface"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

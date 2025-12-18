@@ -1,6 +1,6 @@
 import { useQuery, useInfiniteQuery, useQueries } from '@tanstack/react-query';
 import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, RateLimitError } from './bandcamp';
-import type { AlbumDetailsRequest, BandDetailsRequest, FanCollectionRequest, CollectionDisplayItem } from '../types/bandcamp';
+import type { AlbumDetailsRequest, BandDetailsRequest, CollectionDisplayItem } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
   return useQuery({
@@ -45,7 +45,7 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
         tralbum_id: item.item_id,
       }),
       // Retry up to 5 times for rate limit errors
-      retry: (failureCount, error) => {
+      retry: (failureCount: number, error: Error) => {
         // Retry rate limit errors up to 5 times
         if (error instanceof RateLimitError && failureCount < 5) {
           return true;
@@ -54,7 +54,7 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
         return false;
       },
       // Custom retry delay that respects retry-after header
-      retryDelay: (attemptIndex, error) => {
+      retryDelay: (attemptIndex: number, error: Error) => {
         if (error instanceof RateLimitError) {
           // Use the retry-after value from the API (in seconds), convert to ms
           return error.retryAfter * 1000;

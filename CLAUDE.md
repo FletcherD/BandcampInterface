@@ -2,16 +2,18 @@
 
 ## Project Overview
 
-An alternative interface to Bandcamp built as a React Single Page Application (SPA). The application fetches data from Bandcamp's internal API and displays it in a clean, modern interface with navigation between band and album pages.
+An alternative interface to Bandcamp built as a browser extension (Chrome/Firefox compatible). The application fetches data from Bandcamp's internal API and displays it in a clean, modern interface with navigation between band and album pages. Built with React and distributed as a browser extension to enable direct API access with user authentication.
 
 ## Tech Stack
 
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite 6.4.1
+- **Distribution**: Browser Extension (Manifest V3)
+- **Cross-Browser**: webextension-polyfill (Chrome & Firefox compatible)
 - **Styling**: Tailwind CSS v4
 - **Data Fetching**: React Query (@tanstack/react-query)
 - **Routing**: React Router v6
-- **API**: Bandcamp internal API (proxied through Vite dev server)
+- **API**: Bandcamp internal API (direct access via extension permissions)
 
 ## Architecture
 
@@ -26,6 +28,8 @@ src/
 │   └── persister.ts         # Custom IndexedDB persister (per-query storage)
 ├── types/
 │   └── bandcamp.ts          # TypeScript interfaces for API responses
+├── utils/
+│   └── browser-api.ts       # Browser extension API utilities (cookies)
 ├── components/
 │   ├── AlbumArt.tsx         # Album artwork display component
 │   ├── TrackList.tsx        # Track listing with durations
@@ -38,6 +42,13 @@ src/
 │   └── CollectionPage.tsx   # User collection with infinite scroll
 ├── App.tsx                  # Router setup & React Query provider
 └── main.tsx                 # Application entry point
+
+public/
+├── manifest.json            # Extension manifest (Manifest V3)
+├── background.js            # Background service worker
+├── icon16.png               # Extension icon (16x16)
+├── icon48.png               # Extension icon (48x48)
+└── icon128.png              # Extension icon (128x128)
 
 API_ENDPOINTS.md             # Documentation of discovered API endpoints
 ```
@@ -66,24 +77,74 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
      - `count`: Number of items per page (default: 40)
    - Returns paginated results with tokens for infinite scroll
 
-### CORS Handling
+### Browser Extension Setup
 
-Bandcamp's API doesn't allow direct browser requests due to CORS restrictions. This is solved using Vite's proxy feature:
+The application is built as a browser extension to bypass CORS restrictions and access user authentication cookies.
 
-**vite.config.ts**:
-```typescript
-server: {
-  proxy: {
-    '/api': {
-      target: 'https://bandcamp.com',
-      changeOrigin: true,
-      secure: false,
-    },
+**Key Files:**
+
+**manifest.json** (Manifest V3):
+```json
+{
+  "manifest_version": 3,
+  "name": "Bandcamp Interface",
+  "version": "1.0.0",
+  "permissions": ["cookies", "storage"],
+  "host_permissions": ["https://*.bandcamp.com/*"],
+  "action": {
+    "default_title": "Bandcamp Interface"
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }
 ```
 
-The API client uses relative paths (`/api/...`) which Vite proxies to `https://bandcamp.com/api/...` during development.
+**background.js**:
+```javascript
+// Opens the app in a new tab when extension icon is clicked
+chrome.action.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('index.html') });
+});
+```
+
+**API Configuration:**
+The API client makes direct requests to Bandcamp's API with credentials:
+
+```typescript
+// src/api/bandcamp.ts
+const BANDCAMP_API_BASE = 'https://bandcamp.com/api';
+
+// All fetch calls include credentials: 'include' to send cookies
+const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+  method: 'POST',
+  credentials: 'include', // Includes user's Bandcamp cookies
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(request),
+});
+```
+
+**Cookie Access (Optional):**
+If you need to programmatically access cookies, use the browser API utilities:
+
+```typescript
+// src/utils/browser-api.ts
+import browser from 'webextension-polyfill';
+
+export async function getBandcampCookies(): Promise<Record<string, string>> {
+  const cookies = await browser.cookies.getAll({ domain: '.bandcamp.com' });
+  return cookies.reduce((acc, cookie) => {
+    acc[cookie.name] = cookie.value;
+    return acc;
+  }, {} as Record<string, string>);
+}
+```
 
 ### Error Handling
 
@@ -394,19 +455,40 @@ The `useEnrichedCollectionItems` hook implements progressive enhancement for col
 npm install
 ```
 
-### Running Development Server
+### Building the Extension
+
+```bash
+npm run build
+```
+
+This creates a `dist/` folder with all the extension files.
+
+### Loading the Extension
+
+**Chrome:**
+1. Navigate to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in top-right)
+3. Click "Load unpacked"
+4. Select the `dist/` folder
+5. Click the extension icon in your toolbar to open the app
+
+**Firefox:**
+1. Navigate to `about:debugging#/runtime/this-firefox`
+2. Click "Load Temporary Add-on"
+3. Select any file in the `dist/` folder (e.g., `manifest.json`)
+4. Click the extension icon in your toolbar to open the app
+
+**Note:** You must be logged into Bandcamp in your browser for the extension to access your collection and other authenticated features.
+
+### Development Workflow
+
+For rapid development, you can still use Vite's dev server for testing UI changes:
 
 ```bash
 npm run dev
 ```
 
-Server runs at: http://localhost:5173/
-
-### Building for Production
-
-```bash
-npm run build
-```
+However, API calls will fail due to CORS restrictions. For full functionality testing, you must build and load the extension.
 
 ## Important Implementation Details
 
@@ -585,4 +667,7 @@ Potential features to add:
 - This is a read-only interface - no write operations to Bandcamp
 - API endpoints are undocumented/unofficial and may change
 - Respect Bandcamp's terms of service and rate limits
-- For production deployment, consider implementing proper backend API proxy instead of Vite proxy
+- The extension requires user to be logged into Bandcamp
+- Built with Manifest V3 for future-proof compatibility
+- Works in both Chrome and Firefox (uses webextension-polyfill for compatibility)
+- Extension bypasses CORS and includes user's authentication cookies automatically

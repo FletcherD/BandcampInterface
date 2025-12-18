@@ -1,7 +1,7 @@
 import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest, FanCollection, FanCollectionRequest } from '../types/bandcamp';
 
-// Use relative path to leverage Vite's proxy in development
-const BANDCAMP_API_BASE = '/api';
+// Direct API calls to Bandcamp (for browser extension)
+const BANDCAMP_API_BASE = 'https://bandcamp.com/api';
 
 // Custom error class for rate limiting
 export class RateLimitError extends Error {
@@ -114,6 +114,7 @@ export async function fetchAlbumDetails(
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Include cookies for authenticated requests
       body: JSON.stringify(request),
     });
 
@@ -143,6 +144,7 @@ export async function fetchBandDetails(
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Include cookies for authenticated requests
       body: JSON.stringify(request),
     });
 
@@ -172,6 +174,7 @@ export async function fetchFanCollection(
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Include cookies for authenticated requests
       body: JSON.stringify(request),
     });
 

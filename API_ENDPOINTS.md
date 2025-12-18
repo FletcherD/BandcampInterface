@@ -119,6 +119,7 @@ Root domain: bandcamp.com
 - POST `/api/mobile/24/collected_by`
 - Params: {tralbum_keys}
 
+
 An example valid album detail query that can be used for testing: {"band_id":2197988008, "tralbum_type":"a", "tralbum_id":3616265308}
 An example valid track detail query that can be used for testing: {"band_id":2197988008, "tralbum_type":"t", "tralbum_id":2875186876}
 An example valid user collection/wishlist query that can be used for testing: {"fan_id":621507}
@@ -126,3 +127,4 @@ An example valid user collection/wishlist query that can be used for testing: {"
 ## Pagination
 
 Some endpoints return results one page at a time. For these endpoints, each entry returned (e.g. an album returned from fan_collection) includes a 'token' field. By calling the endpoint with the pagination token of the last entry, the next page of results is returned.
+older_than_token can be set to '9999999999::a::' for the first page of results.
