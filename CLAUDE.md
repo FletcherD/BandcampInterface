@@ -22,6 +22,8 @@ src/
 ├── api/
 │   ├── bandcamp.ts          # API client & helper functions
 │   └── queries.ts           # React Query hooks
+├── lib/
+│   └── persister.ts         # Custom IndexedDB persister (per-query storage)
 ├── types/
 │   └── bandcamp.ts          # TypeScript interfaces for API responses
 ├── components/
@@ -221,7 +223,7 @@ formatReleaseDate(timestamp: number): string
 
 ### Configuration
 
-The application uses React Query with aggressive caching and localStorage persistence:
+The application uses React Query with aggressive caching and IndexedDB persistence:
 
 ```typescript
 const queryClient = new QueryClient({
@@ -234,9 +236,9 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: 'bandcamp-cache',
+// Custom persister that stores each query individually in IndexedDB
+const persister = createPerQueryPersister({
+  throttleTime: 1000, // Batch writes every 1 second
 });
 
 // Wrap app with PersistQueryClientProvider
@@ -256,20 +258,35 @@ const persister = createSyncStoragePersister({
 **Cache behavior:**
 - `staleTime: Infinity` - Data never considered stale, won't refetch unless manually invalidated
 - `gcTime: 24 hours` - Unused data stays in memory for 24 hours before garbage collection
-- **Persistent cache** - Stored in localStorage as `bandcamp-cache` key
+- **Persistent cache** - Stored in IndexedDB (50MB+ capacity vs 5-10MB localStorage limit)
+- **Per-query storage** - Each query stored individually for efficient I/O
 - Survives page reloads and browser restarts
 - Each album/band is ~5-50KB of JSON data
+
+**IndexedDB Storage Structure:**
+```
+Database: "keyval-store"
+├─ rq:query:["collection",621507]  → Collection infinite query (~5MB)
+├─ rq:query:["album",12345]        → Album details (~40KB)
+├─ rq:query:["album",67890]        → Album details (~40KB)
+├─ ... (hundreds of album queries)
+└─ rq:metadata                     → Cache metadata (timestamp, buster)
+```
 
 **Cached data includes:**
 - Album/track details (title, tracks, artwork IDs, credits, tags)
 - Band details (bio, discography, social links)
 - Collection pages (infinite scroll results)
 
+**Why per-query storage?**
+- **Efficiency**: Only writes what changed (one 40KB album vs entire 20MB cache)
+- **Scalability**: Handles hundreds of cached albums without performance issues
+- **No size limits**: IndexedDB supports 50MB-1GB+ depending on browser
+
 **Cache invalidation:**
 To clear the cache manually (if needed):
-```javascript
-localStorage.removeItem('bandcamp-cache')
-```
+- DevTools → Application → IndexedDB → Delete `keyval-store` database
+- Or programmatically: The persister's `removeClient()` method clears all `rq:*` keys
 
 ### Custom Hooks
 
@@ -295,6 +312,46 @@ useEnrichedCollectionItems(items: CollectionDisplayItem[])
 // Each query is cached, so subsequent renders don't re-fetch
 ```
 
+### Persister Implementation
+
+The application uses a custom per-query persister (`src/lib/persister.ts`) that stores each React Query individually in IndexedDB for maximum efficiency.
+
+**Implementation Details:**
+
+```typescript
+// Storage keys
+const QUERY_PREFIX = 'rq:query:';
+const MUTATION_PREFIX = 'rq:mutation:';
+const METADATA_KEY = 'rq:metadata';
+
+// Query stored as: rq:query:["collection",621507]
+// Album stored as: rq:query:["album",12345]
+```
+
+**Key Features:**
+
+1. **Granular Storage**: Each query gets its own IndexedDB key
+   - Collection query: `rq:query:["collection",621507]`
+   - Album queries: `rq:query:["album",12345]`, `rq:query:["album",67890]`, etc.
+
+2. **Efficient Writes**: Only modified queries are written
+   - Loading one album = one 40KB write (not entire 20MB cache)
+   - 500x more efficient than single-blob persistence
+
+3. **Throttled Persistence**: Batches writes every 1000ms to avoid excessive I/O
+
+4. **Cache Validation**: Stores `buster` and `timestamp` for cache versioning
+   - React Query validates cache on restore using these fields
+   - Mismatched `buster` or expired `timestamp` triggers cache clear
+
+5. **Cleanup**: On `removeClient()`, removes all keys with `rq:*` prefix
+
+**Why This Approach:**
+- **Scalability**: Handles 450+ collection items + 450+ album details without performance issues
+- **No size limits**: IndexedDB typically supports 50MB-1GB (vs 5-10MB localStorage)
+- **Better UX**: Faster writes mean less blocking, smoother user experience
+- **Reliability**: Each query persisted independently, partial failures don't corrupt entire cache
+
 ### Background Data Enrichment
 
 The `useEnrichedCollectionItems` hook implements progressive enhancement for collection data:
@@ -304,13 +361,13 @@ The `useEnrichedCollectionItems` hook implements progressive enhancement for col
 2. `useEnrichedCollectionItems` triggers background queries for each album's details
 3. As album details load, release dates are merged into collection items
 4. React re-renders progressively as data arrives
-5. All data is cached in localStorage, so subsequent visits are instant
+5. All data is cached in IndexedDB, so subsequent visits are instant
 
 **Benefits:**
 - Fast initial render (doesn't wait for album details)
 - Progressive enhancement (UI updates as data loads)
-- Efficient caching (each album fetched only once)
-- Persistent across sessions (stored in localStorage)
+- Efficient caching (each album fetched only once, stored in separate IndexedDB key)
+- Persistent across sessions (stored in IndexedDB with 50MB+ capacity)
 - No loading spinners needed - data appears organically
 
 **Performance:**
