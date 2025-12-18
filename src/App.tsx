@@ -20,7 +20,6 @@ const queryClient = new QueryClient({
 // Create persister for localStorage
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: 'bandcamp-cache',
 });
 
 function App() {
