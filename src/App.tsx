@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { createPerQueryPersister } from './lib/persister';
 import CollectionPage from './pages/CollectionPage';
 import BandPage from './pages/BandPage';
 import AlbumPage from './pages/AlbumPage';
@@ -17,9 +17,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Create persister for localStorage
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
+// Create IndexedDB persister that stores each query individually
+// This allows caching 50MB+ of data efficiently (vs 5-10MB localStorage limit)
+const persister = createPerQueryPersister({
+  throttleTime: 1000, // Batch writes every 1 second
 });
 
 function App() {

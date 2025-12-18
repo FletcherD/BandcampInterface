@@ -16,9 +16,18 @@ export default function CollectionPage() {
     isFetchingNextPage,
   } = useFanCollection(TEST_FAN_ID);
 
+  // Debug: Log when data changes
+  useEffect(() => {
+    if (data?.pages) {
+      const totalItems = data.pages.reduce((sum, page) => sum + page.items.length, 0);
+      console.log(`[Collection Debug] Pages: ${data.pages.length}, Items: ${totalItems}, hasNextPage: ${hasNextPage}, isFetching: ${isFetchingNextPage}`);
+    }
+  }, [data?.pages.length, hasNextPage, isFetchingNextPage]);
+
   // Auto-load all pages immediately
   useEffect(() => {
     if (hasNextPage && !isFetchingNextPage) {
+      console.log('[Collection Debug] Calling fetchNextPage()');
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
