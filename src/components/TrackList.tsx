@@ -1,16 +1,15 @@
 import { formatDuration } from '../api/bandcamp';
 import type { Track } from '../types/bandcamp';
 import { useAlbumStreamingUrls, getTrackStreamingUrl } from '../api/streaming-queries';
-import { useState, useRef, useEffect } from 'react';
+import { useAudioPlayer } from '../contexts/AudioPlayerContext';
 
 interface TrackListProps {
   tracks: Track[];
   albumUrl: string;
 }
 
-function TrackPlayer({ track, albumUrl }: { track: Track; albumUrl: string }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+function TrackPlayer({ track, albumUrl, allTracks }: { track: Track; albumUrl: string; allTracks: Track[] }) {
+  const { currentTrack, isPlaying, playTrack, togglePlayPause } = useAudioPlayer();
 
   // Fetch streaming URLs for the entire album
   const { data: streamingUrls, isLoading } = useAlbumStreamingUrls(albumUrl);
@@ -18,39 +17,19 @@ function TrackPlayer({ track, albumUrl }: { track: Track; albumUrl: string }) {
   // Get URL and quality for this specific track
   const { url: streamUrl, quality } = getTrackStreamingUrl(streamingUrls, track.track_id);
 
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
+  // Check if this track is currently playing
+  const isCurrentTrack = currentTrack?.track_id === track.track_id;
+  const isThisTrackPlaying = isCurrentTrack && isPlaying;
 
   const handlePlay = () => {
-    if (!streamUrl) return;
+    if (!streamUrl || !streamingUrls) return;
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio(streamUrl);
-      audioRef.current.addEventListener('ended', () => setIsPlaying(false));
-      audioRef.current.addEventListener('pause', () => setIsPlaying(false));
-      audioRef.current.addEventListener('play', () => setIsPlaying(true));
-      audioRef.current.addEventListener('error', (e) => {
-        console.error('Audio error:', e);
-        setIsPlaying(false);
-      });
-    }
-
-    audioRef.current.play().catch((err) => {
-      console.error('Failed to play audio:', err);
-      setIsPlaying(false);
-    });
-  };
-
-  const handlePause = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
+    if (isCurrentTrack) {
+      // If this track is already loaded, just toggle play/pause
+      togglePlayPause();
+    } else {
+      // Load and play this track
+      playTrack(track, streamUrl, quality || 'standard', allTracks, streamingUrls);
     }
   };
 
@@ -73,28 +52,26 @@ function TrackPlayer({ track, albumUrl }: { track: Track; albumUrl: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      {!isPlaying ? (
-        <button
-          onClick={handlePlay}
-          className={`px-3 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
-            quality === 'hq'
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-          title={quality === 'hq' ? 'Play High Quality (MP3 V0)' : 'Play Standard Quality (128kbps)'}
-        >
-          <span>▶</span>
-          <span>Play</span>
-        </button>
-      ) : (
-        <button
-          onClick={handlePause}
-          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex items-center gap-1"
-        >
-          <span>⏸</span>
-          <span>Pause</span>
-        </button>
-      )}
+      <button
+        onClick={handlePlay}
+        className={`px-3 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
+          isThisTrackPlaying
+            ? 'bg-red-600 hover:bg-red-700 text-white'
+            : quality === 'hq'
+            ? 'bg-green-600 hover:bg-green-700 text-white'
+            : 'bg-blue-600 hover:bg-blue-700 text-white'
+        }`}
+        title={
+          isThisTrackPlaying
+            ? 'Pause'
+            : quality === 'hq'
+            ? 'Play High Quality (MP3 V0)'
+            : 'Play Standard Quality (128kbps)'
+        }
+      >
+        <span>{isThisTrackPlaying ? '⏸' : '▶'}</span>
+        <span>{isThisTrackPlaying ? 'Pause' : 'Play'}</span>
+      </button>
 
       {/* Quality indicator */}
       {quality === 'hq' ? (
@@ -138,7 +115,7 @@ export default function TrackList({ tracks, albumUrl }: TrackListProps) {
               <div className="text-gray-500 dark:text-gray-400 text-sm">
                 {formatDuration(track.duration)}
               </div>
-              <TrackPlayer track={track} albumUrl={albumUrl} />
+              <TrackPlayer track={track} albumUrl={albumUrl} allTracks={tracks} />
             </div>
           </div>
         ))}
