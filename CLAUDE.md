@@ -269,6 +269,7 @@ const getTrablumType = (itemType: string) => {
 - Large album artwork
 - Album title and artist
 - Release date
+- Album description/about text
 - Band/label information (clickable)
 - Genre and location tags
 - Credits

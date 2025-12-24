@@ -69,6 +69,17 @@ export default function AlbumPage() {
                 </p>
               </div>
 
+              {album.about && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">
+                    About
+                  </h3>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {album.about}
+                  </p>
+                </div>
+              )}
+
               <BandInfo band={album.band} />
 
               {album.tags && album.tags.length > 0 && (
