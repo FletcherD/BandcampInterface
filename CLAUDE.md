@@ -185,11 +185,14 @@ React Query automatically handles these errors and retries with the specified de
 
 ## Routing
 
+Uses `HashRouter` (required for browser extensions) with hash-based URLs.
+
 ### Routes
 
-- `/` - Collection page (user's Bandcamp collection)
-- `/band/:bandId` - Band details page with discography
-- `/album/:bandId/:tralbumType/:tralbumId` - Album or track details page
+- `#/` - Collection page (user's Bandcamp collection)
+- `#/band/:bandId` - Band details page with discography
+- `#/album/:bandId/:tralbumType/:tralbumId` - Album or track details page
+- `#/streaming-test` - Streaming URL test page (development)
 
 ### Navigation Flow
 
@@ -279,6 +282,36 @@ formatDuration(seconds: number): string
 // Release date: Unix timestamp → "Month Day, Year"
 formatReleaseDate(timestamp: number): string
 ```
+
+### Streaming URLs
+
+```typescript
+// Get the best available streaming URL (prefers HQ if available)
+getBestStreamingUrl(streamingUrl: StreamingUrl): string
+
+// Get high quality streaming URL (mp3-v0) if available
+getHQStreamingUrl(streamingUrl: StreamingUrl): string | null
+
+// Extract streaming URLs from album page HTML (fallback method)
+// Returns Map of track_id -> { standard?: string, hq?: string }
+extractStreamingUrlsFromPage(albumUrl: string): Promise<Map<number, { standard?: string; hq?: string }>>
+
+// Test if a streaming URL is still valid
+testStreamUrl(streamUrl: string): Promise<{ ok: boolean; status: number }>
+
+// Refresh an expired streaming URL
+refreshStreamUrl(streamUrl: string): Promise<string | null>
+```
+
+**Streaming URL Quality Levels:**
+- **`mp3-128`**: Standard quality (128kbps MP3) - available for all streamable tracks
+- **`mp3-v0`**: High quality (VBR MP3, ~245kbps average) - **only available for tracks you own** when authenticated
+
+**Important Notes:**
+- The mobile API (`/api/mobile/24/tralbum_details`) returns `streaming_url` objects with `"mp3-128"` and potentially `"mp3-v0"` fields
+- For owned tracks, check if `track.streaming_url["mp3-v0"]` exists first - this is the full quality streaming version
+- If the mobile API doesn't include `mp3-v0`, use `extractStreamingUrlsFromPage()` to scrape the album page HTML as a fallback
+- Streaming URLs can expire - use `testStreamUrl()` to check validity and `refreshStreamUrl()` to get a new URL
 
 ## React Query Setup
 

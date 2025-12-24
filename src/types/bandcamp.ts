@@ -8,6 +8,7 @@ export interface BandInfo {
 
 export interface StreamingUrl {
   "mp3-128": string;
+  "mp3-v0"?: string;  // High quality - only available for owned tracks when authenticated
 }
 
 export interface Track {

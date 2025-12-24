@@ -1,4 +1,4 @@
-import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest, FanCollection, FanCollectionRequest } from '../types/bandcamp';
+import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest, FanCollection, FanCollectionRequest, StreamingUrl } from '../types/bandcamp';
 
 // Direct API calls to Bandcamp (for browser extension)
 const BANDCAMP_API_BASE = 'https://bandcamp.com/api';
@@ -217,4 +217,148 @@ export function formatReleaseDate(timestamp: number): string {
     month: 'long',
     day: 'numeric',
   });
+}
+
+/**
+ * Extracts streaming URLs from an album/track page HTML.
+ * This is a fallback method when the mobile API doesn't return mp3-v0 URLs.
+ *
+ * For owned tracks, Bandcamp includes streaming URLs in the page's data-tralbum attribute.
+ * The data structure includes:
+ * - trackinfo[].file['mp3-128']: Standard quality (128kbps)
+ * - trackinfo[].file['mp3-v0']: High quality VBR MP3 (only for owned tracks)
+ *
+ * @param albumUrl - The Bandcamp album or track URL
+ * @returns Object mapping track IDs to their streaming URLs
+ */
+export async function extractStreamingUrlsFromPage(
+  albumUrl: string
+): Promise<Map<number, { standard?: string; hq?: string }>> {
+  const response = await fetch(albumUrl, {
+    credentials: 'include', // Include cookies for authentication
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch album page: ${response.statusText}`);
+  }
+
+  const html = await response.text();
+
+  // Extract the data-tralbum JSON blob from the page
+  const dataTralbumMatch = html.match(/data-tralbum="([^"]+)"/);
+  if (!dataTralbumMatch) {
+    throw new Error('Could not find data-tralbum in page HTML');
+  }
+
+  // Decode HTML entities and parse JSON
+  const decodedJson = dataTralbumMatch[1]
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+
+  const tralbumData = JSON.parse(decodedJson);
+
+  // Extract streaming URLs from trackinfo array
+  const streamingUrls = new Map<number, { standard?: string; hq?: string }>();
+
+  if (Array.isArray(tralbumData.trackinfo)) {
+    for (const track of tralbumData.trackinfo) {
+      const trackId = track.track_id || track.id;
+      if (!trackId) continue;
+
+      const urls: { standard?: string; hq?: string } = {};
+
+      if (track.file?.['mp3-128']) {
+        urls.standard = track.file['mp3-128'];
+      }
+
+      // High quality URL - only present for owned tracks
+      if (track.file?.['mp3-v0']) {
+        urls.hq = track.file['mp3-v0'];
+      }
+
+      if (urls.standard || urls.hq) {
+        streamingUrls.set(trackId, urls);
+      }
+    }
+  }
+
+  return streamingUrls;
+}
+
+/**
+ * Refreshes an expired streaming URL.
+ * Bandcamp streaming URLs can expire. This function uses Bandcamp's refresh API
+ * to get a new valid URL for the same stream.
+ *
+ * @param streamUrl - The expired streaming URL
+ * @returns The refreshed streaming URL, or null if refresh failed
+ */
+export async function refreshStreamUrl(streamUrl: string): Promise<string | null> {
+  const endpoint = '/stream/1/refresh';
+
+  try {
+    const refreshUrl = new URL(`${BANDCAMP_API_BASE}${endpoint}`);
+    refreshUrl.searchParams.set('url', streamUrl);
+
+    const response = await fetch(refreshUrl.toString(), {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to refresh stream URL: ${response.statusText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.url || null;
+  } catch (error) {
+    console.error('Error refreshing stream URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Tests if a streaming URL is still valid.
+ *
+ * @param streamUrl - The streaming URL to test
+ * @returns Object with ok (boolean) and status (HTTP status code)
+ */
+export async function testStreamUrl(streamUrl: string): Promise<{ ok: boolean; status: number }> {
+  try {
+    const response = await fetch(streamUrl, {
+      method: 'HEAD',
+    });
+
+    return {
+      ok: response.ok,
+      status: response.status,
+    };
+  } catch (error) {
+    console.error('Error testing stream URL:', error);
+    return { ok: false, status: 0 };
+  }
+}
+
+/**
+ * Gets the best available streaming URL for a track.
+ * Prefers high quality (mp3-v0) if available, falls back to standard (mp3-128).
+ *
+ * @param streamingUrl - StreamingUrl object from API response
+ * @returns The best available streaming URL
+ */
+export function getBestStreamingUrl(streamingUrl: StreamingUrl): string {
+  return streamingUrl['mp3-v0'] || streamingUrl['mp3-128'];
+}
+
+/**
+ * Gets the high quality streaming URL if available.
+ *
+ * @param streamingUrl - StreamingUrl object from API response
+ * @returns The HQ streaming URL, or null if not available
+ */
+export function getHQStreamingUrl(streamingUrl: StreamingUrl): string | null {
+  return streamingUrl['mp3-v0'] || null;
 }

@@ -104,7 +104,7 @@ export default function AlbumPage() {
 
         {/* Track list */}
         <div className="mt-8">
-          <TrackList tracks={album.tracks} />
+          <TrackList tracks={album.tracks} albumUrl={album.bandcamp_url} />
         </div>
       </div>
     </div>

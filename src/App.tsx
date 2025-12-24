@@ -1,10 +1,11 @@
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { createPerQueryPersister } from './lib/persister';
 import CollectionPage from './pages/CollectionPage';
 import BandPage from './pages/BandPage';
 import AlbumPage from './pages/AlbumPage';
+import StreamingTest from './pages/StreamingTest';
 
 // Create a client with aggressive caching
 const queryClient = new QueryClient({
@@ -26,13 +27,14 @@ const persister = createPerQueryPersister({
 function App() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<CollectionPage />} />
           <Route path="/band/:bandId" element={<BandPage />} />
           <Route path="/album/:bandId/:tralbumType/:tralbumId" element={<AlbumPage />} />
+          <Route path="/streaming-test" element={<StreamingTest />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </PersistQueryClientProvider>
   );
 }
