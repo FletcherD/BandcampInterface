@@ -59,6 +59,7 @@ src/
 │   ├── AlbumPage.tsx        # Album/track detail page with audio player
 │   ├── BandPage.tsx         # Band detail page with discography
 │   ├── CollectionPage.tsx   # User collection with infinite scroll
+│   ├── WishlistPage.tsx     # User wishlist with infinite scroll
 │   └── StreamingTest.tsx    # Streaming URL testing page
 ├── App.tsx                  # Router setup & React Query provider
 └── main.tsx                 # Application entry point
@@ -89,8 +90,16 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
    - Parameters:
      - `band_id`: Artist ID (number)
 
-3. **Fan Collection**: `POST /api/mobile/24/collection_items`
+3. **Fan Collection**: `POST /api/mobile/24/fan_collection`
    - Fetches a user's Bandcamp collection with pagination
+   - Parameters:
+     - `fan_id`: User/fan ID (number)
+     - `older_than`: Pagination token (string, optional)
+     - `count`: Number of items per page (default: 40)
+   - Returns paginated results with tokens for infinite scroll
+
+4. **Fan Wishlist**: `POST /api/mobile/24/fan_wishlist`
+   - Fetches a user's Bandcamp wishlist with pagination
    - Parameters:
      - `fan_id`: User/fan ID (number)
      - `older_than`: Pagination token (string, optional)
@@ -210,6 +219,7 @@ Uses `HashRouter` (required for browser extensions) with hash-based URLs.
 ### Routes
 
 - `#/` - Collection page (user's Bandcamp collection)
+- `#/wishlist` - Wishlist page (user's Bandcamp wishlist)
 - `#/band/:bandId` - Band details page with discography
 - `#/album/:bandId/:tralbumType/:tralbumId` - Album or track details page
 - `#/streaming-test` - Streaming URL test page (development)
@@ -249,6 +259,23 @@ const getTrablumType = (itemType: string) => {
   - Release dates progressively fill in as album details are fetched in background
   - Uses React Query caching - data persists across page reloads
   - Each album is only fetched once and cached permanently
+
+### Wishlist Page
+
+- Display user's Bandcamp wishlist
+- **Auto-loads all wishlist items** on page load (no manual pagination)
+- **Status bar** showing real-time progress:
+  - Wishlist items loaded
+  - Album details being fetched in background
+  - Visual spinner during active operations
+- Switchable views: grid or table
+- Sorting by title, artist name, release date, or date added (table view only)
+- **Background Data Enrichment**: Automatically fetches album details for each wishlist item to get release dates
+  - Initial load shows wishlist without release dates
+  - Release dates progressively fill in as album details are fetched in background
+  - Uses React Query caching - data persists across page reloads
+  - Each album is only fetched once and cached permanently
+- Works identically to Collection Page but displays wishlist items instead of owned items
 
 ### Band Page
 
@@ -390,6 +417,7 @@ const persister = createPerQueryPersister({
 ```
 Database: "keyval-store"
 ├─ rq:query:["collection",621507]  → Collection infinite query (~5MB)
+├─ rq:query:["wishlist",621507]    → Wishlist infinite query (~5MB)
 ├─ rq:query:["album",12345]        → Album details (~40KB)
 ├─ rq:query:["album",67890]        → Album details (~40KB)
 ├─ ... (hundreds of album queries)
@@ -400,6 +428,7 @@ Database: "keyval-store"
 - Album/track details (title, tracks, artwork IDs, credits, tags)
 - Band details (bio, discography, social links)
 - Collection pages (infinite scroll results)
+- Wishlist pages (infinite scroll results)
 
 **Why per-query storage?**
 - **Efficiency**: Only writes what changed (one 40KB album vs entire 20MB cache)
@@ -424,6 +453,10 @@ useBandDetails({ band_id })
 
 // Fetch fan collection with infinite scroll pagination (cached permanently)
 useFanCollection(fan_id)
+// Returns: { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage }
+
+// Fetch fan wishlist with infinite scroll pagination (cached permanently)
+useFanWishlist(fan_id)
 // Returns: { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage }
 
 // Enrich collection items with album details in background

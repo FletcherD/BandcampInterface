@@ -3,6 +3,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { createPerQueryPersister } from './lib/persister';
 import CollectionPage from './pages/CollectionPage';
+import WishlistPage from './pages/WishlistPage';
 import BandPage from './pages/BandPage';
 import AlbumPage from './pages/AlbumPage';
 import StreamingTest from './pages/StreamingTest';
@@ -30,6 +31,7 @@ function App() {
       <HashRouter>
         <Routes>
           <Route path="/" element={<CollectionPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/band/:bandId" element={<BandPage />} />
           <Route path="/album/:bandId/:tralbumType/:tralbumId" element={<AlbumPage />} />
           <Route path="/streaming-test" element={<StreamingTest />} />

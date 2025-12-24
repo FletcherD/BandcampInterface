@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, RateLimitError } from './bandcamp';
+import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, fetchFanWishlist, RateLimitError } from './bandcamp';
 import type { AlbumDetailsRequest, BandDetailsRequest, CollectionDisplayItem } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
@@ -20,6 +20,19 @@ export function useFanCollection(fanId: number) {
   return useInfiniteQuery({
     queryKey: ['collection', fanId],
     queryFn: ({ pageParam }) => fetchFanCollection({ fan_id: fanId, older_than: pageParam }),
+    getNextPageParam: (lastPage) => {
+      // Return the token of the last item for the next page
+      const lastItem = lastPage.items[lastPage.items.length - 1];
+      return lastItem?.token;
+    },
+    initialPageParam: undefined as string | undefined,
+  });
+}
+
+export function useFanWishlist(fanId: number) {
+  return useInfiniteQuery({
+    queryKey: ['wishlist', fanId],
+    queryFn: ({ pageParam }) => fetchFanWishlist({ fan_id: fanId, older_than: pageParam }),
     getNextPageParam: (lastPage) => {
       // Return the token of the last item for the next page
       const lastItem = lastPage.items[lastPage.items.length - 1];

@@ -193,6 +193,36 @@ export async function fetchFanCollection(
   });
 }
 
+export async function fetchFanWishlist(
+  request: FanCollectionRequest
+): Promise<FanCollection> {
+  const endpoint = '/mobile/24/fan_wishlist';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Include cookies for authenticated requests
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      // Mark this endpoint as rate limited so all other requests will wait
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch fan wishlist: ${response.statusText}`);
+    }
+
+    return response.json();
+  });
+}
+
 // Helper to construct album art URL
 export function getAlbumArtUrl(artId: number, size: number = 10): string {
   return `https://f4.bcbits.com/img/a${artId}_${size}.jpg`;
