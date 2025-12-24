@@ -603,7 +603,7 @@ The `Discography` component is a polymorphic component that supports two differe
 1. **Discography Mode** (`mode="discography"`):
    - Used on BandPage to display band's releases
    - Accepts `DiscographyItem[]` with `release_date` field
-   - Shows "Year" column (release year only)
+   - Shows "Released" column (full date)
    - Sorts by title, artist, or release date
 
 2. **Collection Mode** (`mode="collection"`):
@@ -620,15 +620,19 @@ The `Discography` component is a polymorphic component that supports two differe
    - Card-based design with album artwork
    - Hover effects with image scaling
    - Displays title, artist, and year (both modes show release year when available)
+   - Album artwork and title link to album page
+   - Artist name is clickable and links to band page
 
 2. **Table View**:
    - Compact tabular layout
    - Sortable columns adapt to mode:
-     - Discography: Title, Artist, Year (release year)
-     - Collection: Title, Artist, Released (year), Added (full date)
+     - Discography: Title, Artist, Released (full date)
+     - Collection: Title, Artist, Released (full date), Added (full date)
    - Click column headers to toggle sort direction
    - Visual indicators for current sort field and direction (↑↓)
    - Smaller thumbnails for efficient space usage
+   - Album titles link to album page
+   - Artist names are clickable and link to band page
 
 Both views:
 - Support client-side sorting

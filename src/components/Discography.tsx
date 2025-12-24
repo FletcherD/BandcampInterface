@@ -140,30 +140,38 @@ export default function Discography(props: DiscographyProps) {
             }
 
             return (
-              <Link
-                key={item.item_id}
-                to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}
-                className="group cursor-pointer"
-              >
-                <div className="relative aspect-square mb-2 overflow-hidden rounded-lg shadow-md">
-                  <img
-                    src={getAlbumArtUrl(item.art_id, 10)}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                  />
-                </div>
-                <div className="text-sm">
-                  <div className="font-medium truncate">{item.title}</div>
-                  <div className="text-gray-600 dark:text-gray-400 truncate">
-                    {item.artist_name}
+              <div key={item.item_id} className="group">
+                <Link
+                  to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}
+                  className="block"
+                >
+                  <div className="relative aspect-square mb-2 overflow-hidden rounded-lg shadow-md">
+                    <img
+                      src={getAlbumArtUrl(item.art_id, 10)}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                    />
                   </div>
+                  <div className="text-sm">
+                    <div className="font-medium truncate hover:text-blue-600 dark:hover:text-blue-400">
+                      {item.title}
+                    </div>
+                  </div>
+                </Link>
+                <div className="text-sm">
+                  <Link
+                    to={`/band/${item.band_id}`}
+                    className="text-gray-600 dark:text-gray-400 truncate block hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    {item.artist_name}
+                  </Link>
                   {releaseYear && (
                     <div className="text-xs text-gray-500 dark:text-gray-500">
                       {releaseYear}
                     </div>
                   )}
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
@@ -198,7 +206,7 @@ export default function Discography(props: DiscographyProps) {
                     onClick={() => handleSort('release_date')}
                   >
                     <div className="flex items-center gap-2">
-                      Year <SortIcon field="release_date" />
+                      Released <SortIcon field="release_date" />
                     </div>
                   </th>
                 ) : (
@@ -227,8 +235,8 @@ export default function Discography(props: DiscographyProps) {
               {sortedItems.map((item) => {
                 if (mode === 'discography') {
                   const discItem = item as DiscographyItem;
-                  const releaseYear = discItem.release_date
-                    ? new Date(discItem.release_date).getFullYear()
+                  const releaseDate = discItem.release_date
+                    ? new Date(discItem.release_date).toLocaleDateString()
                     : '-';
 
                   return (
@@ -253,19 +261,24 @@ export default function Discography(props: DiscographyProps) {
                           {item.title}
                         </Link>
                       </td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">
-                        {item.artist_name}
+                      <td className="p-3">
+                        <Link
+                          to={`/band/${item.band_id}`}
+                          className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          {item.artist_name}
+                        </Link>
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-400">
-                        {releaseYear}
+                        {releaseDate}
                       </td>
                     </tr>
                   );
                 } else {
                   // Collection mode
                   const collItem = item as CollectionDisplayItem;
-                  const releaseYear = collItem.release_date
-                    ? new Date(collItem.release_date).getFullYear()
+                  const releaseDate = collItem.release_date
+                    ? new Date(collItem.release_date).toLocaleDateString()
                     : '-';
                   const addedDate = collItem.added_date
                     ? new Date(collItem.added_date).toLocaleDateString()
@@ -293,11 +306,16 @@ export default function Discography(props: DiscographyProps) {
                           {item.title}
                         </Link>
                       </td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">
-                        {item.artist_name}
+                      <td className="p-3">
+                        <Link
+                          to={`/band/${item.band_id}`}
+                          className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                        >
+                          {item.artist_name}
+                        </Link>
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-400">
-                        {releaseYear}
+                        {releaseDate}
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-400">
                         {addedDate}
