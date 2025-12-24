@@ -1,5 +1,20 @@
 # Bandcamp Interface - Development Documentation
 
+---
+
+## 🤖 AI Assistant Instructions
+
+**IMPORTANT: When making any code changes, architecture updates, or adding new features:**
+1. Make the changes/implementations as requested
+2. **ALWAYS update this CLAUDE.md file** with the new information before completing the task
+3. Update relevant sections: Project Structure, Key Features, Implementation Details, etc.
+4. Add new sections if introducing major new functionality
+5. Keep code examples and architecture diagrams up to date
+
+**This file should always reflect the current state of the project.**
+
+---
+
 ## Project Overview
 
 An alternative interface to Bandcamp built as a browser extension (Chrome/Firefox compatible). The application fetches data from Bandcamp's internal API and displays it in a clean, modern interface with navigation between band and album pages. Built with React and distributed as a browser extension to enable direct API access with user authentication.
@@ -23,23 +38,28 @@ An alternative interface to Bandcamp built as a browser extension (Chrome/Firefo
 src/
 ├── api/
 │   ├── bandcamp.ts          # API client & helper functions
-│   └── queries.ts           # React Query hooks
+│   ├── queries.ts           # React Query hooks
+│   └── streaming-queries.ts # Streaming URL React Query hooks
 ├── lib/
 │   └── persister.ts         # Custom IndexedDB persister (per-query storage)
 ├── types/
 │   └── bandcamp.ts          # TypeScript interfaces for API responses
 ├── utils/
 │   └── browser-api.ts       # Browser extension API utilities (cookies)
+├── contexts/
+│   └── AudioPlayerContext.tsx  # Centralized audio player state management
 ├── components/
 │   ├── AlbumArt.tsx         # Album artwork display component
-│   ├── TrackList.tsx        # Track listing with durations
+│   ├── TrackList.tsx        # Track listing with play buttons & quality indicators
 │   ├── BandInfo.tsx         # Band/label info card (clickable)
 │   ├── TagList.tsx          # Genre/location tags display
-│   └── Discography.tsx      # Grid/table view with sorting
+│   ├── Discography.tsx      # Grid/table view with sorting
+│   └── PlaybackControl.tsx  # Fixed playback control bar (seek, prev/next)
 ├── pages/
-│   ├── AlbumPage.tsx        # Album/track detail page
+│   ├── AlbumPage.tsx        # Album/track detail page with audio player
 │   ├── BandPage.tsx         # Band detail page with discography
-│   └── CollectionPage.tsx   # User collection with infinite scroll
+│   ├── CollectionPage.tsx   # User collection with infinite scroll
+│   └── StreamingTest.tsx    # Streaming URL testing page
 ├── App.tsx                  # Router setup & React Query provider
 └── main.tsx                 # Application entry point
 
@@ -256,6 +276,14 @@ const getTrablumType = (itemType: string) => {
   - Track numbers
   - Track titles
   - Durations (formatted as MM:SS)
+  - **Play buttons** for each track with quality indicators
+  - Color-coded buttons (green for HQ, blue for standard, red for playing)
+- **Unified Playback Control** (fixed at bottom):
+  - Play/pause, previous, next controls
+  - Seek bar with time display
+  - Current track info and quality badge
+  - Auto-plays next track when current finishes
+- **High-Quality Streaming** for owned tracks (MP3 V0 ~245kbps)
 - Pricing information
 - Link to original Bandcamp page
 
@@ -663,20 +691,206 @@ The application includes dark mode styles using Tailwind's `dark:` variants:
 className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
 ```
 
-## Future Enhancements
+## Audio Streaming & Playback
+
+### Overview
+
+The application includes a full-featured audio player for streaming owned tracks in high quality. Streaming is implemented using page scraping to extract URLs from Bandcamp's `data-tralbum` attribute, as the mobile API does not include high-quality streaming URLs.
+
+### Architecture
+
+```
+User clicks Play on track
+    ↓
+useAlbumStreamingUrls(albumUrl) - Fetches streaming URLs via page scraping
+    ↓
+AudioPlayerContext - Manages playback state globally
+    ↓
+PlaybackControl - Unified player UI at bottom of page
+    ↓
+HTML5 Audio element streams the track
+```
+
+### Streaming Quality Levels
+
+- **mp3-128**: Standard quality (128kbps MP3) - available for all streamable tracks
+- **mp3-v0**: High quality VBR MP3 (~245kbps average) - **only available for tracks you own**
+
+The mobile API (`/api/mobile/24/tralbum_details`) only returns standard quality URLs. For high-quality streaming, the app scrapes the album page HTML to extract URLs from the `data-tralbum` JSON object.
+
+### Implementation Details
+
+**Page Scraping Approach:**
+```typescript
+// src/api/bandcamp.ts
+export async function extractStreamingUrlsFromPage(albumUrl: string) {
+  // 1. Fetch album page HTML with credentials
+  const response = await fetch(albumUrl, { credentials: 'include' });
+
+  // 2. Extract <script data-tralbum> content
+  const dataTralbumMatch = html.match(/data-tralbum="([^"]+)"/);
+
+  // 3. Decode HTML entities and parse JSON
+  const tralbumData = JSON.parse(decodedJson);
+
+  // 4. Extract streaming URLs from trackinfo array
+  for (const track of tralbumData.trackinfo) {
+    const urls = {
+      standard: track.file?.['mp3-128'],  // Always present
+      hq: track.file?.['mp3-v0']          // Only for owned tracks
+    };
+  }
+
+  // Returns Map<trackId, { standard?: string, hq?: string }>
+}
+```
+
+**Caching Strategy:**
+- Streaming URLs are fetched fresh on each album page load
+- `staleTime: 0` - No caching between page loads
+- `gcTime: 0` - Don't persist after component unmounts
+- URLs are time-sensitive and expire after several hours
+
+**React Query Hook:**
+```typescript
+// src/api/streaming-queries.ts
+export function useAlbumStreamingUrls(albumUrl: string) {
+  return useQuery({
+    queryKey: ['streaming-urls', albumUrl],
+    queryFn: () => extractStreamingUrlsFromPage(albumUrl),
+    enabled: !!albumUrl,
+    staleTime: 0,           // Always fetch fresh
+    gcTime: 0,              // Don't cache
+    refetchOnMount: true,   // Refetch when component mounts
+  });
+}
+```
+
+### Audio Player Architecture
+
+**Centralized State Management:**
+```typescript
+// src/contexts/AudioPlayerContext.tsx
+export function AudioPlayerProvider({ children }) {
+  const [currentTrack, setCurrentTrack] = useState<TrackWithUrl | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Methods: playTrack, togglePlayPause, seekTo, playNext, playPrevious
+}
+```
+
+**Key Features:**
+- Single audio element shared across all tracks
+- Clicking play on any track switches to that track
+- Auto-plays next track when current track ends
+- Previous button restarts track if >3 seconds in, otherwise goes to previous
+- Seek bar with visual progress indicator
+- Displays current track info and quality badge
+
+### Components
+
+**PlaybackControl** (`src/components/PlaybackControl.tsx`):
+- Fixed position at bottom of page
+- Shows current track title, artist, and quality badge
+- Play/pause, previous, next buttons
+- Seek bar with time display
+- Only visible when a track is loaded
+
+**TrackPlayer** (in `src/components/TrackList.tsx`):
+- Play/Pause button for each track
+- Quality indicator badge (HQ/SD)
+- Button color indicates quality:
+  - 🟢 Green = HQ available
+  - 🔵 Blue = Standard quality
+  - 🔴 Red = Currently playing (shows Pause)
+- Integrates with AudioPlayerContext
+
+### Usage Example
+
+```typescript
+// AlbumPage wraps content with AudioPlayerProvider
+<AudioPlayerProvider>
+  <div className="pb-32"> {/* Bottom padding for fixed player */}
+    <TrackList tracks={album.tracks} albumUrl={album.bandcamp_url} />
+  </div>
+  <PlaybackControl />
+</AudioPlayerProvider>
+```
+
+```typescript
+// TrackList uses the audio player context
+function TrackPlayer({ track, allTracks, albumUrl }) {
+  const { playTrack, isPlaying, currentTrack } = useAudioPlayer();
+  const { data: streamingUrls } = useAlbumStreamingUrls(albumUrl);
+  const { url, quality } = getTrackStreamingUrl(streamingUrls, track.track_id);
+
+  const handlePlay = () => {
+    playTrack(track, url, quality, allTracks, streamingUrls);
+  };
+}
+```
+
+### Streaming URL Helpers
+
+```typescript
+// Get best available quality (prefers HQ)
+getBestStreamingUrl(streamingUrl: StreamingUrl): string
+
+// Get HQ URL if available
+getHQStreamingUrl(streamingUrl: StreamingUrl): string | null
+
+// Extract streaming URLs from album page HTML
+extractStreamingUrlsFromPage(albumUrl: string): Promise<Map<number, { standard?: string; hq?: string }>>
+
+// Test if a streaming URL is still valid
+testStreamUrl(streamUrl: string): Promise<{ ok: boolean; status: number }>
+
+// Refresh an expired streaming URL
+refreshStreamUrl(streamUrl: string): Promise<string | null>
+```
+
+### Performance Notes
+
+**Page Scraping Overhead:**
+- ~100-300ms to fetch album page
+- <10ms to parse JSON
+- One request per album page load
+- Negligible compared to audio streaming bandwidth (4-8MB per track)
+
+**Why Not Use Mobile API?**
+- Mobile API only returns mp3-128 (standard quality)
+- Designed for bandwidth-constrained mobile apps
+- HQ streaming URLs only available in web page HTML
+- Page scraping is what Bandcamp's web player uses
+
+### Testing
+
+**Test Page:** `/streaming-test`
+- Verify page scraping extracts URLs correctly
+- Test HQ URLs for owned albums
+- Validate URLs can be played
+- Debug streaming issues
+
+### Future Enhancements
 
 Potential features to add:
 - Search functionality
-- Audio player for streaming tracks
 - Genre/tag browsing
 - Artist recommendations
 - Responsive mobile optimization
-- Keyboard navigation
+- Keyboard shortcuts for playback control
+- Volume control
+- Shuffle and repeat modes
+- Playlist creation
 - Loading skeletons instead of basic "Loading..." text
 - Filter/search within collection
 - Collection statistics and insights
 - Export collection data
 - Multiple collection view modes (compact, detailed, etc.)
+- Download manager for purchased albums
 
 ## Testing
 
