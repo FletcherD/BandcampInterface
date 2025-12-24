@@ -640,6 +640,7 @@ Both views:
 - Maintain sort state when switching views
 - Link to album detail pages
 - Adapt date display based on mode
+- **View preference is persisted** in localStorage and remembered across sessions
 
 ### Auto-Loading Collection Items
 

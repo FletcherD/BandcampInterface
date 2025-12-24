@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAlbumArtUrl } from '../api/bandcamp';
 import type { DiscographyItem, CollectionDisplayItem } from '../types/bandcamp';
@@ -21,13 +21,26 @@ type DiscographyProps = DiscographyModeProps | CollectionModeProps;
 type DiscographySortField = 'title' | 'artist_name' | 'release_date';
 type CollectionSortField = 'title' | 'artist_name' | 'release_date' | 'added_date';
 
+const VIEW_MODE_STORAGE_KEY = 'discography-view-mode';
+
 export default function Discography(props: DiscographyProps) {
   const { mode, items } = props;
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+
+  // Load saved view mode from localStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return (saved === 'grid' || saved === 'table') ? saved : 'grid';
+  });
+
   const [sortField, setSortField] = useState<DiscographySortField | CollectionSortField>(
     mode === 'discography' ? 'release_date' : 'added_date'
   );
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Save view mode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   // Convert item_type to tralbum_type format ('album' -> 'a', 'track' -> 't')
   const getTrablumType = (itemType: string) => {
