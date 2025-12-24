@@ -91,7 +91,7 @@ export default function BandPage() {
 
         {/* Discography */}
         {band.discography.length > 0 && (
-          <Discography mode="discography" items={band.discography} />
+          <Discography mode="discography" items={band.discography} defaultArtistName={band.name} />
         )}
       </div>
     </div>

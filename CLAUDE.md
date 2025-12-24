@@ -604,8 +604,10 @@ The `Discography` component is a polymorphic component that supports two differe
 1. **Discography Mode** (`mode="discography"`):
    - Used on BandPage to display band's releases
    - Accepts `DiscographyItem[]` with `release_date` field
+   - Accepts optional `defaultArtistName` prop to populate blank artist fields
    - Shows "Released" column (full date)
    - Sorts by title, artist, or release date
+   - When artist_name is blank, displays the band name from the page context
 
 2. **Collection Mode** (`mode="collection"`):
    - Used on CollectionPage to display user's collection

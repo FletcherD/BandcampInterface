@@ -9,11 +9,13 @@ type SortDirection = 'asc' | 'desc';
 interface DiscographyModeProps {
   mode: 'discography';
   items: DiscographyItem[];
+  defaultArtistName?: string;
 }
 
 interface CollectionModeProps {
   mode: 'collection';
   items: CollectionDisplayItem[];
+  defaultArtistName?: string;
 }
 
 type DiscographyProps = DiscographyModeProps | CollectionModeProps;
@@ -24,7 +26,7 @@ type CollectionSortField = 'title' | 'artist_name' | 'release_date' | 'added_dat
 const VIEW_MODE_STORAGE_KEY = 'discography-view-mode';
 
 export default function Discography(props: DiscographyProps) {
-  const { mode, items } = props;
+  const { mode, items, defaultArtistName } = props;
 
   // Load saved view mode from localStorage
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -176,7 +178,7 @@ export default function Discography(props: DiscographyProps) {
                     to={`/band/${item.band_id}`}
                     className="text-gray-600 dark:text-gray-400 truncate block hover:text-blue-600 dark:hover:text-blue-400"
                   >
-                    {item.artist_name}
+                    {item.artist_name || defaultArtistName || ''}
                   </Link>
                   {releaseYear && (
                     <div className="text-xs text-gray-500 dark:text-gray-500">
@@ -279,7 +281,7 @@ export default function Discography(props: DiscographyProps) {
                           to={`/band/${item.band_id}`}
                           className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                         >
-                          {item.artist_name}
+                          {item.artist_name || defaultArtistName || ''}
                         </Link>
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-400">
@@ -324,7 +326,7 @@ export default function Discography(props: DiscographyProps) {
                           to={`/band/${item.band_id}`}
                           className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
                         >
-                          {item.artist_name}
+                          {item.artist_name || defaultArtistName || ''}
                         </Link>
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-400">
