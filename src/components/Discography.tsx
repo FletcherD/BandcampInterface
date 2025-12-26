@@ -160,11 +160,11 @@ export default function Discography(props: DiscographyProps) {
                   to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}
                   className="block"
                 >
-                  <div className="relative aspect-square mb-2 overflow-hidden rounded-lg shadow-md">
+                  <div className="relative aspect-square mb-2 overflow-hidden rounded-lg shadow-md bg-gray-100 dark:bg-gray-800">
                     <img
                       src={getAlbumArtUrl(item.art_id, 10)}
                       alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
                     />
                   </div>
                   <div className="text-sm">
@@ -260,12 +260,14 @@ export default function Discography(props: DiscographyProps) {
                       className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <td className="p-3">
-                        <Link to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}>
-                          <img
-                            src={getAlbumArtUrl(item.art_id, 2)}
-                            alt={item.title}
-                            className="w-12 h-12 rounded shadow-sm"
-                          />
+                        <Link to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`} className="block">
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded shadow-sm overflow-hidden">
+                            <img
+                              src={getAlbumArtUrl(item.art_id, 2)}
+                              alt={item.title}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
                         </Link>
                       </td>
                       <td className="p-3">
@@ -305,12 +307,14 @@ export default function Discography(props: DiscographyProps) {
                       className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <td className="p-3">
-                        <Link to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`}>
-                          <img
-                            src={getAlbumArtUrl(item.art_id, 2)}
-                            alt={item.title}
-                            className="w-12 h-12 rounded shadow-sm"
-                          />
+                        <Link to={`/album/${item.band_id}/${getTrablumType(item.item_type)}/${item.item_id}`} className="block">
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded shadow-sm overflow-hidden">
+                            <img
+                              src={getAlbumArtUrl(item.art_id, 2)}
+                              alt={item.title}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
                         </Link>
                       </td>
                       <td className="p-3">
