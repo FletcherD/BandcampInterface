@@ -1,4 +1,2 @@
-album art in table view is not square
-"you own this"
-track streaming
-'about' field on album details
+album art on table view is not square
+nav bar for collection/wishlist

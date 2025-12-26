@@ -1,25 +1,89 @@
 import { useParams } from 'react-router-dom';
+import { useEffect, useMemo } from 'react';
 import { useAlbumDetails } from '../api/queries';
-import { formatReleaseDate } from '../api/bandcamp';
+import { formatReleaseDate, extractPageStyle } from '../api/bandcamp';
 import AlbumArt from '../components/AlbumArt';
 import TrackList from '../components/TrackList';
 import BandInfo from '../components/BandInfo';
 import TagList from '../components/TagList';
 import { AudioPlayerProvider } from '../contexts/AudioPlayerContext';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import PlaybackControl from '../components/PlaybackControl';
+import { ThemeToggle } from '../components/ThemeToggle';
 
-export default function AlbumPage() {
+function AlbumPageContent() {
   const { bandId, tralbumType, tralbumId } = useParams<{
     bandId: string;
     tralbumType: string;
     tralbumId: string;
   }>();
 
+  const { theme, bandcampStyle, setBandcampStyle } = useTheme();
+
   const { data: album, isLoading, error } = useAlbumDetails({
     band_id: Number(bandId),
     tralbum_type: tralbumType!,
     tralbum_id: Number(tralbumId),
   });
+
+  // Fetch Bandcamp styling when album loads
+  useEffect(() => {
+    if (album?.bandcamp_url) {
+      console.log('Fetching Bandcamp style from:', album.bandcamp_url);
+      extractPageStyle(album.bandcamp_url)
+        .then(style => {
+          console.log('Successfully extracted Bandcamp style:', style);
+          setBandcampStyle(style);
+        })
+        .catch(err => {
+          console.warn('Could not extract Bandcamp style (custom domain or CORS issue):', err.message);
+          console.info('The Bandcamp theme will not be available for this album. Using default theme.');
+          setBandcampStyle(null);
+        });
+    }
+  }, [album?.bandcamp_url, setBandcampStyle]);
+
+  // Generate CSS variables from extracted style
+  const cssVariables = useMemo(() => {
+    if (!bandcampStyle || theme !== 'bandcamp') return {};
+
+    const vars: Record<string, string> = {};
+
+    if (bandcampStyle.backgroundColor) {
+      vars['--bc-bg-color'] = bandcampStyle.backgroundColor;
+    }
+    if (bandcampStyle.backgroundImage) {
+      vars['--bc-bg-image'] = `url(${bandcampStyle.backgroundImage})`;
+    }
+    if (bandcampStyle.textColor) {
+      vars['--bc-text-color'] = bandcampStyle.textColor;
+      vars['--bc-text-secondary'] = `${bandcampStyle.textColor}B3`; // Add alpha for secondary text
+    }
+    if (bandcampStyle.linkColor) {
+      vars['--bc-link-color'] = bandcampStyle.linkColor;
+      vars['--bc-accent-color'] = bandcampStyle.linkColor; // Use link color as accent
+    }
+    if (bandcampStyle.accentColor) {
+      vars['--bc-accent-color'] = bandcampStyle.accentColor;
+    }
+    if (bandcampStyle.secondaryBackgroundColor) {
+      vars['--bc-secondary-bg'] = bandcampStyle.secondaryBackgroundColor;
+      vars['--bc-secondary-bg-hover'] = bandcampStyle.secondaryBackgroundColor + 'E6'; // Slightly more opaque on hover
+    }
+    if (bandcampStyle.buttonBackgroundColor) {
+      vars['--bc-button-bg'] = bandcampStyle.buttonBackgroundColor;
+    }
+    if (bandcampStyle.buttonTextColor) {
+      vars['--bc-button-text'] = bandcampStyle.buttonTextColor;
+    }
+
+    // Set border color from text color with low opacity
+    if (bandcampStyle.textColor) {
+      vars['--bc-border-color'] = `${bandcampStyle.textColor}33`; // 20% opacity
+    }
+
+    return vars;
+  }, [bandcampStyle, theme]);
 
   if (isLoading) {
     return (
@@ -49,8 +113,14 @@ export default function AlbumPage() {
 
   return (
     <AudioPlayerProvider>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pb-32">
-        <div className="max-w-6xl mx-auto p-6">
+      <div
+        className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pb-32"
+        data-theme={theme}
+        data-has-bg-image={theme === 'bandcamp' && !!bandcampStyle?.backgroundImage}
+        style={cssVariables}
+      >
+        <ThemeToggle />
+        <div className="max-w-6xl mx-auto p-6 album-page-content">
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Left column - Album art */}
             <div>
@@ -74,7 +144,7 @@ export default function AlbumPage() {
                   <h3 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">
                     About
                   </h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap about-text">
                     {album.about}
                   </p>
                 </div>
@@ -96,14 +166,14 @@ export default function AlbumPage() {
                   <h3 className="text-sm font-semibold mb-2 text-gray-600 dark:text-gray-400">
                     Credits
                   </h3>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap credits-text">
                     {album.credits}
                   </p>
                 </div>
               )}
 
               <div className="flex items-center gap-4 pt-4">
-                <div className="text-3xl font-bold">${album.price}</div>
+                <div className="text-3xl font-bold price-display">${album.price}</div>
                 <a
                   href={album.bandcamp_url}
                   target="_blank"
@@ -126,5 +196,14 @@ export default function AlbumPage() {
       {/* Playback control - fixed at bottom */}
       <PlaybackControl />
     </AudioPlayerProvider>
+  );
+}
+
+// Wrap with ThemeProvider
+export default function AlbumPage() {
+  return (
+    <ThemeProvider>
+      <AlbumPageContent />
+    </ThemeProvider>
   );
 }

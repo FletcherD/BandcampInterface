@@ -10,7 +10,7 @@ export default function TagList({ tags }: TagListProps) {
       {tags.map((tag) => (
         <span
           key={tag.norm_name}
-          className="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full"
+          className="tag px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full"
         >
           {tag.name}
         </span>

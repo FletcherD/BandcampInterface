@@ -37,7 +37,7 @@ An alternative interface to Bandcamp built as a browser extension (Chrome/Firefo
 ```
 src/
 ├── api/
-│   ├── bandcamp.ts          # API client & helper functions
+│   ├── bandcamp.ts          # API client & helper functions + style extraction
 │   ├── queries.ts           # React Query hooks
 │   └── streaming-queries.ts # Streaming URL React Query hooks
 ├── lib/
@@ -47,16 +47,20 @@ src/
 ├── utils/
 │   └── browser-api.ts       # Browser extension API utilities (cookies)
 ├── contexts/
-│   └── AudioPlayerContext.tsx  # Centralized audio player state management
+│   ├── AudioPlayerContext.tsx  # Centralized audio player state management
+│   └── ThemeContext.tsx     # Theme state management (default/Bandcamp)
+├── styles/
+│   └── bandcamp-theme.css   # Bandcamp theme CSS with dynamic variables
 ├── components/
 │   ├── AlbumArt.tsx         # Album artwork display component
 │   ├── TrackList.tsx        # Track listing with play buttons & quality indicators
 │   ├── BandInfo.tsx         # Band/label info card (clickable)
 │   ├── TagList.tsx          # Genre/location tags display
 │   ├── Discography.tsx      # Grid/table view with sorting
-│   └── PlaybackControl.tsx  # Fixed playback control bar (seek, prev/next)
+│   ├── PlaybackControl.tsx  # Fixed playback control bar (seek, prev/next)
+│   └── ThemeToggle.tsx      # Theme toggle button (default/Bandcamp)
 ├── pages/
-│   ├── AlbumPage.tsx        # Album/track detail page with audio player
+│   ├── AlbumPage.tsx        # Album/track detail page with audio player & theme toggle
 │   ├── BandPage.tsx         # Band detail page with discography
 │   ├── CollectionPage.tsx   # User collection with infinite scroll
 │   ├── WishlistPage.tsx     # User wishlist with infinite scroll
@@ -314,6 +318,97 @@ const getTrablumType = (itemType: string) => {
 - **High-Quality Streaming** for owned tracks (MP3 V0 ~245kbps)
 - Pricing information
 - Link to original Bandcamp page
+- **Bandcamp Theme Toggle**: Switch between default styling and extracted Bandcamp page styling
+  - Toggle button in top-right corner
+  - Dynamically extracts custom colors, backgrounds, and styling from each album's Bandcamp page
+  - Preserves theme choice in localStorage
+  - Each album has unique styling matching the artist's customization
+
+### Theme Toggle Feature
+
+The Album Page includes a theme toggle that allows switching between two visual styles:
+
+**Default Theme:**
+- Clean, consistent interface with blue accents
+- White background with gray text
+- Standard Tailwind styling
+
+**Bandcamp Theme:**
+- Dynamically extracts and applies each album's custom styling from its Bandcamp page
+- Matches the artist's chosen colors, backgrounds, and aesthetic
+- Each album has unique styling (different background colors, accent colors, text colors, etc.)
+
+**How It Works:**
+
+1. **Style Extraction** (`extractPageStyle` in `bandcamp.ts`):
+   - Fetches the album's Bandcamp page HTML
+   - Parses CSS from style tags and inline styles
+   - Extracts colors from:
+     - Body background color and background images
+     - Text colors (primary and secondary)
+     - Link colors and accent colors
+     - Button styles
+   - Returns a `BandcampPageStyle` object with all extracted styling
+
+2. **Theme Management** (`ThemeContext.tsx`):
+   - React Context provides theme state (`'default'` or `'bandcamp'`)
+   - `toggleTheme()` function switches between themes
+   - `bandcampStyle` state stores extracted styling
+   - Theme preference persisted in localStorage
+
+3. **Dynamic Styling** (`bandcamp-theme.css`):
+   - CSS custom properties (variables) set dynamically from extracted style
+   - `[data-theme="bandcamp"]` selector applies themed styles
+   - Variables like `--bc-bg-color`, `--bc-text-color`, `--bc-link-color`
+   - All components styled with theme-aware classes
+
+4. **Theme Toggle Button** (`ThemeToggle.tsx`):
+   - Fixed position in top-right corner
+   - Shows current theme and toggles on click
+   - Always accessible across page navigation
+
+**Implementation Details:**
+
+```typescript
+// Extract styling from Bandcamp page
+export async function extractPageStyle(albumUrl: string): Promise<BandcampPageStyle> {
+  // Fetches HTML, parses CSS, extracts colors
+  // Returns: { backgroundColor, backgroundImage, textColor, linkColor, etc. }
+}
+
+// Theme context provides theme state
+const { theme, toggleTheme, bandcampStyle, setBandcampStyle } = useTheme();
+
+// Apply theme with data attribute and CSS variables
+<div
+  data-theme={theme}
+  data-has-bg-image={theme === 'bandcamp' && !!bandcampStyle?.backgroundImage}
+  style={{
+    '--bc-bg-color': bandcampStyle?.backgroundColor,
+    '--bc-text-color': bandcampStyle?.textColor,
+    '--bc-link-color': bandcampStyle?.linkColor,
+    // ... more variables
+  }}
+>
+```
+
+**CSS Classes for Theming:**
+- `.album-page-content` - Main content wrapper
+- `.band-info-card` - Band information card
+- `.tag` - Genre/location tags
+- `.track-list-item` - Track rows
+- `.track-number` - Track number display
+- `.track-duration` - Duration display
+- `.play-button-hq` / `.play-button-standard` - Play buttons
+- `.quality-badge-hq` / `.quality-badge-sd` - Quality indicators
+- `.playback-control` - Fixed playback bar
+
+**File Locations:**
+- `/src/api/bandcamp.ts` - `extractPageStyle()` function and `BandcampPageStyle` interface
+- `/src/contexts/ThemeContext.tsx` - Theme state management
+- `/src/components/ThemeToggle.tsx` - Toggle button component
+- `/src/styles/bandcamp-theme.css` - Theme-specific CSS rules
+- `/src/pages/AlbumPage.tsx` - Theme integration and style application
 
 ## Helper Functions
 

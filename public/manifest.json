@@ -8,7 +8,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://*.bandcamp.com/*"
+    "https://*.bandcamp.com/*",
+    "https://*/*"
   ],
   "action": {
     "default_title": "Bandcamp Interface"

@@ -58,8 +58,8 @@ function TrackPlayer({ track, albumUrl, allTracks }: { track: Track; albumUrl: s
           isThisTrackPlaying
             ? 'bg-red-600 hover:bg-red-700 text-white'
             : quality === 'hq'
-            ? 'bg-green-600 hover:bg-green-700 text-white'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            ? 'play-button-hq bg-green-600 hover:bg-green-700 text-white'
+            : 'play-button-standard bg-blue-600 hover:bg-blue-700 text-white'
         }`}
         title={
           isThisTrackPlaying
@@ -76,14 +76,14 @@ function TrackPlayer({ track, albumUrl, allTracks }: { track: Track; albumUrl: s
       {/* Quality indicator */}
       {quality === 'hq' ? (
         <span
-          className="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded font-medium"
+          className="quality-badge-hq text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded font-medium"
           title="High Quality - MP3 V0 (~245kbps)"
         >
           HQ
         </span>
       ) : (
         <span
-          className="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded font-medium"
+          className="quality-badge-sd text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded font-medium"
           title="Standard Quality - 128kbps"
         >
           SD
@@ -101,10 +101,10 @@ export default function TrackList({ tracks, albumUrl }: TrackListProps) {
         {tracks.map((track) => (
           <div
             key={track.track_id}
-            className="py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 px-3 rounded transition-colors"
+            className="track-list-item py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 px-3 rounded transition-colors"
           >
             <div className="flex items-center gap-4 flex-1 min-w-0">
-              <span className="text-gray-500 dark:text-gray-400 w-8 text-right flex-shrink-0">
+              <span className="track-number text-gray-500 dark:text-gray-400 w-8 text-right flex-shrink-0">
                 {track.track_num}
               </span>
               <div className="flex-1 min-w-0">
@@ -112,7 +112,7 @@ export default function TrackList({ tracks, albumUrl }: TrackListProps) {
               </div>
             </div>
             <div className="flex items-center gap-4 flex-shrink-0">
-              <div className="text-gray-500 dark:text-gray-400 text-sm">
+              <div className="track-duration text-gray-500 dark:text-gray-400 text-sm">
                 {formatDuration(track.duration)}
               </div>
               <TrackPlayer track={track} albumUrl={albumUrl} allTracks={tracks} />

@@ -25,7 +25,7 @@ export default function PlaybackControl() {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
+    <div className="playback-control fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
       <div className="max-w-6xl mx-auto px-6 py-4">
         {/* Track info and controls */}
         <div className="flex items-center gap-4 mb-2">
@@ -35,11 +35,11 @@ export default function PlaybackControl() {
             <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
               <span>{currentTrack.band_name}</span>
               {currentTrack.quality === 'hq' ? (
-                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded font-medium">
+                <span className="quality-badge-hq text-xs px-2 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded font-medium">
                   HQ
                 </span>
               ) : (
-                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded font-medium">
+                <span className="quality-badge-sd text-xs px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded font-medium">
                   SD
                 </span>
               )}

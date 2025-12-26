@@ -10,7 +10,7 @@ export default function BandInfo({ band }: BandInfoProps) {
   return (
     <Link
       to={`/band/${band.band_id}`}
-      className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+      className="band-info-card flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
     >
       <img
         src={getBandImageUrl(band.image_id)}

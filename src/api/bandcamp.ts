@@ -392,3 +392,143 @@ export function getBestStreamingUrl(streamingUrl: StreamingUrl): string {
 export function getHQStreamingUrl(streamingUrl: StreamingUrl): string | null {
   return streamingUrl['mp3-v0'] || null;
 }
+
+/**
+ * Interface for extracted Bandcamp page styling
+ */
+export interface BandcampPageStyle {
+  backgroundColor?: string;
+  backgroundImage?: string;
+  textColor?: string;
+  linkColor?: string;
+  accentColor?: string;
+  secondaryBackgroundColor?: string;
+  buttonBackgroundColor?: string;
+  buttonTextColor?: string;
+}
+
+/**
+ * Extracts custom styling from a Bandcamp album page.
+ * Each Bandcamp page can have artist-customized colors, backgrounds, and fonts.
+ *
+ * @param albumUrl - The Bandcamp album URL
+ * @returns Extracted style information
+ */
+export async function extractPageStyle(albumUrl: string): Promise<BandcampPageStyle> {
+  const response = await fetch(albumUrl, {
+    credentials: 'include', // Include cookies for authentication
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch album page: ${response.statusText}`);
+  }
+
+  const html = await response.text();
+  const style: BandcampPageStyle = {};
+
+  // Extract page properties from the TralbumData object
+  const dataTralbumMatch = html.match(/data-tralbum="([^"]+)"/);
+  if (dataTralbumMatch) {
+    try {
+      const decodedJson = dataTralbumMatch[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+      const tralbumData = JSON.parse(decodedJson);
+
+      // Some color info might be in tralbum data
+      if (tralbumData.item_link_color) {
+        style.linkColor = tralbumData.item_link_color;
+      }
+    } catch (e) {
+      console.warn('Failed to parse tralbum data for styling:', e);
+    }
+  }
+
+  // Extract CSS from style tags (Bandcamp often uses inline styles)
+  const styleTagMatch = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+  if (styleTagMatch) {
+    for (const styleTag of styleTagMatch) {
+      const styleContent = styleTag.replace(/<\/?style[^>]*>/gi, '');
+
+      // Look for body background styles - handle both 'background:' and 'background-color:'
+      const bodyBgMatch = styleContent.match(/body[^{]*\{[^}]*(?:background-color|background):\s*([^;}\n]+)/i);
+      if (bodyBgMatch && !style.backgroundColor) {
+        const bgValue = bodyBgMatch[1].trim();
+        // Extract just the color (handle 'background: #color url(...) repeat')
+        const colorMatch = bgValue.match(/(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+        if (colorMatch) {
+          style.backgroundColor = colorMatch[1];
+        }
+      }
+
+      const bodyBgImageMatch = styleContent.match(/body[^{]*\{[^}]*background-image:\s*url\(([^)]+)\)/i);
+      if (bodyBgImageMatch && !style.backgroundImage) {
+        style.backgroundImage = bodyBgImageMatch[1].replace(/['"]/g, '').trim();
+      }
+
+      // Look for text colors on body
+      const bodyColorMatch = styleContent.match(/body[^{]*\{[^}]*color:\s*([^;}\n]+)/i);
+      if (bodyColorMatch && !style.textColor) {
+        style.textColor = bodyColorMatch[1].trim();
+      }
+
+      // Look for general text color if not found on body
+      if (!style.textColor) {
+        const generalColorMatch = styleContent.match(/(?:#pgBd|\.bd|#pagedata)[^{]*\{[^}]*color:\s*([^;}\n]+)/i);
+        if (generalColorMatch) {
+          style.textColor = generalColorMatch[1].trim();
+        }
+      }
+
+      // Look for link colors (custom-link-color class, custom-color, or a elements)
+      const linkColorMatch = styleContent.match(/\.custom-link-color[^{]*\{[^}]*color:\s*([^;}\n]+)/i) ||
+                              styleContent.match(/\.custom-color[^{]*\{[^}]*color:\s*([^;}\n]+)/i) ||
+                              styleContent.match(/a[^{]*\{[^}]*color:\s*([^;}\n]+)/i);
+      if (linkColorMatch && !style.linkColor) {
+        style.linkColor = linkColorMatch[1].trim();
+      }
+
+      // Look for button styles
+      const buttonBgMatch = styleContent.match(/\.buyItem[^{]*\{[^}]*background(?:-color)?:\s*([^;}\n]+)/i);
+      if (buttonBgMatch && !style.buttonBackgroundColor) {
+        style.buttonBackgroundColor = buttonBgMatch[1].trim();
+      }
+
+      const buttonColorMatch = styleContent.match(/\.buyItem[^{]*\{[^}]*color:\s*([^;}\n]+)/i);
+      if (buttonColorMatch && !style.buttonTextColor) {
+        style.buttonTextColor = buttonColorMatch[1].trim();
+      }
+    }
+  }
+
+  // Extract inline body styles as fallback
+  const bodyStyleMatch = html.match(/<body[^>]*style="([^"]+)"/i);
+  if (bodyStyleMatch) {
+    const inlineStyle = bodyStyleMatch[1];
+
+    if (!style.backgroundColor) {
+      const bgColorMatch = inlineStyle.match(/background-color:\s*([^;]+);?/i);
+      if (bgColorMatch) {
+        style.backgroundColor = bgColorMatch[1].trim();
+      }
+    }
+
+    if (!style.backgroundImage) {
+      const bgImageMatch = inlineStyle.match(/background-image:\s*url\(([^)]+)\);?/i);
+      if (bgImageMatch) {
+        style.backgroundImage = bgImageMatch[1].replace(/['"]/g, '').trim();
+      }
+    }
+
+    if (!style.textColor) {
+      const colorMatch = inlineStyle.match(/color:\s*([^;]+);?/i);
+      if (colorMatch) {
+        style.textColor = colorMatch[1].trim();
+      }
+    }
+  }
+
+  return style;
+}

@@ -1,0 +1,152 @@
+/**
+ * Bandcamp Theme Styles
+ *
+ * These styles are applied when data-theme="bandcamp" is set on the album page container.
+ * CSS custom properties are set dynamically from the extracted page style.
+ */
+
+/* Base Bandcamp theme overrides */
+[data-theme="bandcamp"] {
+  /* CSS variables will be set dynamically via inline style */
+  background-color: var(--bc-bg-color, #464446);
+  color: var(--bc-text-color, #EBDBDB);
+  min-height: 100vh;
+}
+
+/* Background image support */
+[data-theme="bandcamp"][data-has-bg-image="true"] {
+  background-image: var(--bc-bg-image);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Album page container */
+[data-theme="bandcamp"] .album-page-content {
+  background-color: transparent;
+}
+
+/* Text colors */
+[data-theme="bandcamp"] h1,
+[data-theme="bandcamp"] h2,
+[data-theme="bandcamp"] h3,
+[data-theme="bandcamp"] h4,
+[data-theme="bandcamp"] p {
+  color: var(--bc-text-color, #EBDBDB);
+}
+
+/* Secondary text */
+[data-theme="bandcamp"] .text-gray-500,
+[data-theme="bandcamp"] .text-gray-600,
+[data-theme="bandcamp"] .text-gray-700 {
+  color: var(--bc-text-secondary, rgba(235, 219, 219, 0.7)) !important;
+}
+
+/* Links */
+[data-theme="bandcamp"] a {
+  color: var(--bc-link-color, #C26B92);
+  text-decoration: none;
+}
+
+[data-theme="bandcamp"] a:hover {
+  text-decoration: underline;
+}
+
+/* Band info card */
+[data-theme="bandcamp"] .band-info-card {
+  background-color: var(--bc-secondary-bg, rgba(58, 56, 58, 0.8));
+  border-radius: 8px;
+}
+
+[data-theme="bandcamp"] .band-info-card:hover {
+  background-color: var(--bc-secondary-bg-hover, rgba(68, 66, 68, 0.9));
+}
+
+/* Tags */
+[data-theme="bandcamp"] .tag {
+  background-color: var(--bc-accent-color, #C26B92);
+  color: var(--bc-button-text, #000000);
+  opacity: 0.8;
+}
+
+[data-theme="bandcamp"] .tag:hover {
+  opacity: 1;
+}
+
+/* Track list */
+[data-theme="bandcamp"] .track-list-item {
+  border-color: var(--bc-border-color, rgba(235, 219, 219, 0.2));
+}
+
+[data-theme="bandcamp"] .track-list-item:hover {
+  background-color: var(--bc-secondary-bg, rgba(58, 56, 58, 0.5));
+}
+
+[data-theme="bandcamp"] .track-number,
+[data-theme="bandcamp"] .track-duration {
+  color: var(--bc-text-secondary, rgba(235, 219, 219, 0.7));
+}
+
+/* Play buttons - keep our functional colors but adjust for theme */
+[data-theme="bandcamp"] .play-button-hq {
+  background-color: var(--bc-accent-color, #C26B92);
+  color: var(--bc-button-text, #FFFFFF);
+}
+
+[data-theme="bandcamp"] .play-button-hq:hover {
+  opacity: 0.9;
+}
+
+[data-theme="bandcamp"] .play-button-standard {
+  background-color: var(--bc-link-color, #C26B92);
+  color: var(--bc-button-text, #FFFFFF);
+  opacity: 0.7;
+}
+
+[data-theme="bandcamp"] .play-button-standard:hover {
+  opacity: 0.85;
+}
+
+/* Playback control bar */
+[data-theme="bandcamp"] .playback-control {
+  background-color: var(--bc-secondary-bg, rgba(58, 56, 58, 0.95));
+  border-top-color: var(--bc-border-color, rgba(235, 219, 219, 0.2));
+}
+
+/* Quality badges */
+[data-theme="bandcamp"] .quality-badge-hq {
+  background-color: var(--bc-accent-color, #C26B92);
+  color: var(--bc-button-text, #FFFFFF);
+  opacity: 0.3;
+}
+
+[data-theme="bandcamp"] .quality-badge-sd {
+  background-color: var(--bc-link-color, #C26B92);
+  color: var(--bc-button-text, #FFFFFF);
+  opacity: 0.2;
+}
+
+/* Buttons */
+[data-theme="bandcamp"] button:not(.play-button-hq):not(.play-button-standard):not(.playback-control button) {
+  background-color: var(--bc-button-bg, var(--bc-accent-color, #C26B92));
+  color: var(--bc-button-text, #FFFFFF);
+}
+
+[data-theme="bandcamp"] button:hover:not(.play-button-hq):not(.play-button-standard):not(.playback-control button) {
+  opacity: 0.9;
+}
+
+/* Price display */
+[data-theme="bandcamp"] .price-display {
+  color: var(--bc-text-color, #EBDBDB);
+}
+
+/* Typography adjustments for Bandcamp feel */
+[data-theme="bandcamp"] {
+  line-height: 1.5em;
+}
+
+[data-theme="bandcamp"] .about-text,
+[data-theme="bandcamp"] .credits-text {
+  line-height: 1.6em;
+}
