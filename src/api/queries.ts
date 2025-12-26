@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, fetchFanWishlist, RateLimitError } from './bandcamp';
+import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, fetchFanWishlist, extractPageStyle, RateLimitError } from './bandcamp';
 import type { AlbumDetailsRequest, BandDetailsRequest, CollectionDisplayItem } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
@@ -111,4 +111,19 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
       rateLimited: rateLimitedCount,
     },
   };
+}
+
+/**
+ * Fetches and caches Bandcamp page styling for an album.
+ * Styles are cached permanently (staleTime: Infinity) since album styling rarely changes.
+ */
+export function useBandcampPageStyle(albumUrl: string | undefined) {
+  return useQuery({
+    queryKey: ['bandcamp-style', albumUrl],
+    queryFn: () => extractPageStyle(albumUrl!),
+    enabled: !!albumUrl,
+    staleTime: Infinity, // Never refetch - album styling rarely changes
+    gcTime: 1000 * 60 * 60 * 24, // Keep in cache for 24 hours
+    retry: false, // Don't retry if page fetch fails (CORS, custom domain, etc.)
+  });
 }

@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useMemo } from 'react';
-import { useAlbumDetails } from '../api/queries';
-import { formatReleaseDate, extractPageStyle } from '../api/bandcamp';
+import { useAlbumDetails, useBandcampPageStyle } from '../api/queries';
+import { formatReleaseDate } from '../api/bandcamp';
 import AlbumArt from '../components/AlbumArt';
 import TrackList from '../components/TrackList';
 import BandInfo from '../components/BandInfo';
@@ -26,22 +26,20 @@ function AlbumPageContent() {
     tralbum_id: Number(tralbumId),
   });
 
-  // Fetch Bandcamp styling when album loads
+  // Fetch and cache Bandcamp styling
+  const { data: pageStyle, isError: styleError } = useBandcampPageStyle(album?.bandcamp_url);
+
+  // Update theme context when style is fetched
   useEffect(() => {
-    if (album?.bandcamp_url) {
-      console.log('Fetching Bandcamp style from:', album.bandcamp_url);
-      extractPageStyle(album.bandcamp_url)
-        .then(style => {
-          console.log('Successfully extracted Bandcamp style:', style);
-          setBandcampStyle(style);
-        })
-        .catch(err => {
-          console.warn('Could not extract Bandcamp style (custom domain or CORS issue):', err.message);
-          console.info('The Bandcamp theme will not be available for this album. Using default theme.');
-          setBandcampStyle(null);
-        });
+    if (pageStyle) {
+      console.log('Successfully extracted Bandcamp style:', pageStyle);
+      setBandcampStyle(pageStyle);
+    } else if (styleError) {
+      console.warn('Could not extract Bandcamp style (custom domain or CORS issue)');
+      console.info('The Bandcamp theme will not be available for this album. Using default theme.');
+      setBandcampStyle(null);
     }
-  }, [album?.bandcamp_url, setBandcampStyle]);
+  }, [pageStyle, styleError, setBandcampStyle]);
 
   // Generate CSS variables from extracted style
   const cssVariables = useMemo(() => {
