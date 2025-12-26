@@ -38,11 +38,11 @@
   color: inherit;
 }
 
-/* Secondary text - use a slightly transparent version of text color */
+/* Secondary text - just inherit normal color */
 [data-theme="bandcamp"] .text-gray-500,
 [data-theme="bandcamp"] .text-gray-600,
 [data-theme="bandcamp"] .text-gray-700 {
-  opacity: 0.7;
+  color: inherit;
 }
 
 /* Links */
@@ -57,37 +57,49 @@
 
 /* Band info card */
 [data-theme="bandcamp"] .band-info-card {
-  background-color: var(--bc-secondary-bg, rgba(58, 56, 58, 0.8));
+  background-color: rgba(0, 0, 0, 0.05); /* Subtle gray background */
   border-radius: 8px;
+  color: inherit; /* Use normal text color */
 }
 
 [data-theme="bandcamp"] .band-info-card:hover {
-  background-color: var(--bc-secondary-bg-hover, rgba(68, 66, 68, 0.9));
+  background-color: rgba(0, 0, 0, 0.08);
 }
 
-/* Tags */
+/* Band info card - override link colors to normal text */
+[data-theme="bandcamp"] .band-info-card h3,
+[data-theme="bandcamp"] .band-info-card p {
+  color: inherit !important;
+}
+
+/* Tags - use subtle styling with normal text color */
 [data-theme="bandcamp"] .tag {
-  background-color: var(--bc-accent-color, #C26B92);
-  color: var(--bc-button-text, #000000);
-  opacity: 0.8;
+  background-color: rgba(0, 0, 0, 0.08); /* Light gray background */
+  color: inherit; /* Normal text color, not accent */
+  border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 [data-theme="bandcamp"] .tag:hover {
-  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.12);
 }
 
 /* Track list */
 [data-theme="bandcamp"] .track-list-item {
-  border-color: var(--bc-border-color, rgba(235, 219, 219, 0.2));
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="bandcamp"] .track-list-item:hover {
-  background-color: var(--bc-secondary-bg, rgba(58, 56, 58, 0.5));
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Track titles - use link color like Bandcamp */
+[data-theme="bandcamp"] .track-list-item .font-medium {
+  color: var(--bc-link-color, #0687F5);
 }
 
 [data-theme="bandcamp"] .track-number,
 [data-theme="bandcamp"] .track-duration {
-  color: var(--bc-text-secondary, rgba(235, 219, 219, 0.7));
+  opacity: 0.6;
 }
 
 /* Play buttons - keep our functional colors but adjust for theme */
