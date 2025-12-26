@@ -5,11 +5,10 @@
  * CSS custom properties are set dynamically from the extracted page style.
  */
 
-/* Base Bandcamp theme overrides */
+/* Base Bandcamp theme overrides - outer page background */
 [data-theme="bandcamp"] {
   /* CSS variables will be set dynamically via inline style */
   background-color: var(--bc-bg-color, #464446);
-  color: var(--bc-text-color, #EBDBDB);
   min-height: 100vh;
 }
 
@@ -21,25 +20,29 @@
   background-position: center;
 }
 
-/* Album page container */
+/* Centered content column - mimics Bandcamp's #pgBd structure */
 [data-theme="bandcamp"] .album-page-content {
-  background-color: transparent;
+  background-color: var(--bc-content-bg, #FFFFFF);
+  color: var(--bc-text-color, #000000);
+  /* Add some padding and shadow for the column effect */
+  padding: 2rem 1.5rem;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3);
 }
 
-/* Text colors */
+/* Text colors - inherit from content column */
 [data-theme="bandcamp"] h1,
 [data-theme="bandcamp"] h2,
 [data-theme="bandcamp"] h3,
 [data-theme="bandcamp"] h4,
 [data-theme="bandcamp"] p {
-  color: var(--bc-text-color, #EBDBDB);
+  color: inherit;
 }
 
-/* Secondary text */
+/* Secondary text - use a slightly transparent version of text color */
 [data-theme="bandcamp"] .text-gray-500,
 [data-theme="bandcamp"] .text-gray-600,
 [data-theme="bandcamp"] .text-gray-700 {
-  color: var(--bc-text-secondary, rgba(235, 219, 219, 0.7)) !important;
+  opacity: 0.7;
 }
 
 /* Links */

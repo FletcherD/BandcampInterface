@@ -70,6 +70,9 @@ function AlbumPageContent() {
       vars['--bc-secondary-bg'] = bandcampStyle.secondaryBackgroundColor;
       vars['--bc-secondary-bg-hover'] = bandcampStyle.secondaryBackgroundColor + 'E6'; // Slightly more opaque on hover
     }
+    if (bandcampStyle.contentBackgroundColor) {
+      vars['--bc-content-bg'] = bandcampStyle.contentBackgroundColor;
+    }
     if (bandcampStyle.buttonBackgroundColor) {
       vars['--bc-button-bg'] = bandcampStyle.buttonBackgroundColor;
     }

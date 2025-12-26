@@ -403,6 +403,7 @@ export interface BandcampPageStyle {
   linkColor?: string;
   accentColor?: string;
   secondaryBackgroundColor?: string;
+  contentBackgroundColor?: string; // Background for centered content column (#pgBd)
   buttonBackgroundColor?: string;
   buttonTextColor?: string;
 }
@@ -479,6 +480,16 @@ export async function extractPageStyle(albumUrl: string): Promise<BandcampPageSt
         const generalColorMatch = styleContent.match(/(?:#pgBd|\.bd|#pagedata)[^{]*\{[^}]*color:\s*([^;}\n]+)/i);
         if (generalColorMatch) {
           style.textColor = generalColorMatch[1].trim();
+        }
+      }
+
+      // Look for content column background (#pgBd - Bandcamp's centered content container)
+      const contentBgMatch = styleContent.match(/#pgBd[^{]*\{[^}]*(?:background-color|background):\s*([^;}\n]+)/i);
+      if (contentBgMatch && !style.contentBackgroundColor) {
+        const bgValue = contentBgMatch[1].trim();
+        const colorMatch = bgValue.match(/(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+        if (colorMatch) {
+          style.contentBackgroundColor = colorMatch[1];
         }
       }
 
