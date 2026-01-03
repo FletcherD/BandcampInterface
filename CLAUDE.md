@@ -1098,7 +1098,10 @@ export function useAlbumStreamingUrls(albumUrl: string) {
 
 ### Audio Player Architecture
 
-**Centralized State Management:**
+**Global State Management:**
+
+The audio player is implemented at the **app level** to persist playback across navigation. The `AudioPlayerProvider` wraps all routes in `App.tsx`, ensuring that playback continues uninterrupted when navigating between pages.
+
 ```typescript
 // src/contexts/AudioPlayerContext.tsx
 export function AudioPlayerProvider({ children }) {
@@ -1113,21 +1116,25 @@ export function AudioPlayerProvider({ children }) {
 ```
 
 **Key Features:**
+- **Persistent across navigation**: Playback continues when switching between pages
 - Single audio element shared across all tracks
 - Clicking play on any track switches to that track
 - Auto-plays next track when current track ends
 - Previous button restarts track if >3 seconds in, otherwise goes to previous
 - Seek bar with visual progress indicator
 - Displays current track info and quality badge
+- Global playback control bar at the bottom of the screen
 
 ### Components
 
 **PlaybackControl** (`src/components/PlaybackControl.tsx`):
-- Fixed position at bottom of page
+- **Global component rendered at app level** - persists across all pages
+- Fixed position at bottom of the screen
 - Shows current track title, artist, and quality badge
 - Play/pause, previous, next buttons
 - Seek bar with time display
 - Only visible when a track is loaded
+- Playback continues uninterrupted when navigating between pages
 
 **TrackPlayer** (in `src/components/TrackList.tsx`):
 - Play/Pause button for each track
@@ -1140,16 +1147,51 @@ export function AudioPlayerProvider({ children }) {
 
 ### Usage Example
 
+**App-Level Setup** (`src/App.tsx`):
 ```typescript
-// AlbumPage wraps content with AudioPlayerProvider
-<AudioPlayerProvider>
-  <div className="pb-32"> {/* Bottom padding for fixed player */}
-    <TrackList tracks={album.tracks} albumUrl={album.bandcamp_url} />
-  </div>
-  <PlaybackControl />
-</AudioPlayerProvider>
+// AudioPlayerProvider wraps all routes at the app level
+function App() {
+  return (
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
+      <HashRouter>
+        <AudioPlayerProvider>
+          <AppContent />
+        </AudioPlayerProvider>
+      </HashRouter>
+    </PersistQueryClientProvider>
+  );
+}
+
+// AppContent has access to audio player context
+function AppContent() {
+  const { currentTrack } = useAudioPlayer();
+
+  return (
+    <div className={currentTrack ? 'pb-32' : ''}> {/* Conditional bottom padding */}
+      <Routes>
+        {/* All routes */}
+      </Routes>
+
+      {/* Global playback control - persists across navigation */}
+      <PlaybackControl />
+    </div>
+  );
+}
 ```
 
+**Page-Level Usage** (`src/pages/AlbumPage.tsx`):
+```typescript
+// AlbumPage can directly use the audio player context (provided by App.tsx)
+function AlbumPageContent() {
+  return (
+    <div>
+      <TrackList tracks={album.tracks} albumUrl={album.bandcamp_url} />
+    </div>
+  );
+}
+```
+
+**Component Usage** (`src/components/TrackList.tsx`):
 ```typescript
 // TrackList uses the audio player context
 function TrackPlayer({ track, allTracks, albumUrl }) {

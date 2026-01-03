@@ -8,6 +8,8 @@ import SearchPage from './pages/SearchPage';
 import BandPage from './pages/BandPage';
 import AlbumPage from './pages/AlbumPage';
 import StreamingTest from './pages/StreamingTest';
+import { AudioPlayerProvider, useAudioPlayer } from './contexts/AudioPlayerContext';
+import PlaybackControl from './components/PlaybackControl';
 
 // Create a client with aggressive caching
 const queryClient = new QueryClient({
@@ -26,18 +28,34 @@ const persister = createPerQueryPersister({
   throttleTime: 1000, // Batch writes every 1 second
 });
 
+// Inner component that has access to AudioPlayerContext
+function AppContent() {
+  const { currentTrack } = useAudioPlayer();
+
+  return (
+    <div className={currentTrack ? 'pb-32' : ''}>
+      <Routes>
+        <Route path="/" element={<CollectionPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/band/:bandId" element={<BandPage />} />
+        <Route path="/album/:bandId/:tralbumType/:tralbumId" element={<AlbumPage />} />
+        <Route path="/streaming-test" element={<StreamingTest />} />
+      </Routes>
+
+      {/* Global playback control - persists across navigation */}
+      <PlaybackControl />
+    </div>
+  );
+}
+
 function App() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <HashRouter>
-        <Routes>
-          <Route path="/" element={<CollectionPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/band/:bandId" element={<BandPage />} />
-          <Route path="/album/:bandId/:tralbumType/:tralbumId" element={<AlbumPage />} />
-          <Route path="/streaming-test" element={<StreamingTest />} />
-        </Routes>
+        <AudioPlayerProvider>
+          <AppContent />
+        </AudioPlayerProvider>
       </HashRouter>
     </PersistQueryClientProvider>
   );
