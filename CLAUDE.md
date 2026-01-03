@@ -19,6 +19,28 @@
 
 An alternative interface to Bandcamp built as a browser extension (Chrome/Firefox compatible). The application fetches data from Bandcamp's internal API and displays it in a clean, modern interface with navigation between band and album pages. Built with React and distributed as a browser extension to enable direct API access with user authentication.
 
+## Documentation
+
+This project has two types of documentation:
+
+1. **README.md** - Public-facing documentation for end users
+   - Installation instructions for Chrome and Firefox
+   - Feature overview with descriptions
+   - Usage guide and troubleshooting
+   - Privacy policy and disclaimer about unofficial API usage
+   - Contributing guidelines
+
+2. **CLAUDE.md** (this file) - Developer documentation for AI assistants and contributors
+   - Complete architecture and implementation details
+   - API endpoints and integration patterns
+   - Component structure and data flow
+   - Caching strategies and performance optimizations
+   - Code examples and best practices
+
+**When to update each:**
+- Update **README.md** when adding user-facing features or changing installation/usage steps
+- Update **CLAUDE.md** when making architectural changes, adding new components, or changing implementation patterns
+
 ## Tech Stack
 
 - **Framework**: React 18 with TypeScript
