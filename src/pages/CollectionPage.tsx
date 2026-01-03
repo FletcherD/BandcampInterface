@@ -100,8 +100,8 @@ export default function CollectionPage() {
     // Show album details fetching status
     if (stats.rateLimited > 0) {
       messages.push(`⏳ Rate limited, waiting to retry ${stats.rateLimited} album${stats.rateLimited !== 1 ? 's' : ''}...`);
-    } else if (stats.fetching > 0 || stats.pending > 0) {
-      messages.push(`Fetching details for ${stats.fetching + stats.pending} album${stats.fetching + stats.pending !== 1 ? 's' : ''}`);
+    } else if (stats.remaining > 0) {
+      messages.push(`Fetching details for ${stats.remaining} album${stats.remaining !== 1 ? 's' : ''}`);
     } else if (stats.loaded > 0) {
       messages.push(`Album details loaded (${stats.loaded}/${stats.total})`);
     }
@@ -117,7 +117,7 @@ export default function CollectionPage() {
         {/* Status Bar */}
         <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-center gap-3">
-            {(isFetchingNextPage || hasNextPage || stats.fetching > 0 || stats.pending > 0) && (
+            {(isFetchingNextPage || hasNextPage || stats.remaining > 0) && (
               <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
             )}
             <span className="text-sm text-blue-900 dark:text-blue-100 font-medium">

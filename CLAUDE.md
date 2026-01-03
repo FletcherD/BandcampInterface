@@ -633,6 +633,16 @@ The `useEnrichedCollectionItems` hook implements progressive enhancement for col
 - Queries are marked as background enhancements (don't block UI)
 - Cached with `staleTime: Infinity` (permanent cache)
 
+**Stats Calculation:**
+The hook returns stats about the enrichment progress:
+- `total`: Total number of albums in the collection
+- `remaining`: Number of albums without data yet (queries not complete)
+- `fetching`: Number of albums actively being fetched
+- `loaded`: Number of albums with data loaded
+- `rateLimited`: Number of albums waiting for rate limit to clear
+
+**Important Note:** In React Query, `isPending` and `isFetching` are NOT mutually exclusive. A query in its initial fetch has both `isPending=true` AND `isFetching=true`. Previously, the stats incorrectly added these together, showing ~2x the actual count (e.g., 1280 instead of 673). Now we count queries without data (`remaining`) instead of adding the two flags.
+
 **Rate Limit Handling:**
 - Detects HTTP 429 (rate limit) responses from Bandcamp API
 - **Mutex-based serialization**: Only one request per endpoint executes at a time

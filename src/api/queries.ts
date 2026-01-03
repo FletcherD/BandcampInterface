@@ -81,9 +81,12 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
   });
 
   // Calculate loading stats
-  const pendingCount = albumQueries.filter(q => q.isPending).length;
-  const fetchingCount = albumQueries.filter(q => q.isFetching).length;
+  // Note: isPending and isFetching are not mutually exclusive
+  // A query in initial fetch has both isPending=true AND isFetching=true
+  // So we count queries without data (remaining) instead of adding the two
   const loadedCount = albumQueries.filter(q => q.data).length;
+  const remainingCount = albumQueries.filter(q => !q.data).length;
+  const activelyFetchingCount = albumQueries.filter(q => q.isFetching).length;
   const rateLimitedCount = albumQueries.filter(q =>
     q.error instanceof RateLimitError && q.isError
   ).length;
@@ -105,8 +108,8 @@ export function useEnrichedCollectionItems(items: CollectionDisplayItem[]) {
     items: enrichedItems,
     stats: {
       total: items.length,
-      pending: pendingCount,
-      fetching: fetchingCount,
+      remaining: remainingCount,
+      fetching: activelyFetchingCount,
       loaded: loadedCount,
       rateLimited: rateLimitedCount,
     },
