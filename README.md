@@ -51,7 +51,7 @@ An alternative interface for Bandcamp, built as a browser extension. Browse your
 
 **Recommended for most users** - No build tools required!
 
-1. Go to the [Releases page](https://github.com/yourusername/BandcampInterface/releases)
+1. Go to the [Releases page](https://github.com/FletcherD/BandcampInterface/releases)
 2. Download the latest release:
    - **Chrome**: Download `bandcamp-interface-chrome.zip`
    - **Firefox**: Download `bandcamp-interface-firefox.zip`
@@ -80,7 +80,7 @@ An alternative interface for Bandcamp, built as a browser extension. Browse your
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/BandcampInterface.git
+   git clone https://github.com/FletcherD/BandcampInterface.git
    cd BandcampInterface
    ```
 
@@ -240,4 +240,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 **Enjoy your music!** 🎵
 
-If you encounter issues or have suggestions, please [open an issue](https://github.com/yourusername/BandcampInterface/issues).
+If you encounter issues or have suggestions, please [open an issue](https://github.com/FletcherD/BandcampInterface/issues).
