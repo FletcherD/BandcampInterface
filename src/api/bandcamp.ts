@@ -262,6 +262,76 @@ export async function fetchCurrentUser(): Promise<CurrentUser> {
   });
 }
 
+/**
+ * Search across all of Bandcamp using the autocomplete/elastic search API.
+ * Returns bands, albums, tracks, and fans matching the search query.
+ */
+export async function fetchAutocompleteSearch(
+  request: import('../types/bandcamp').AutocompleteSearchRequest
+): Promise<import('../types/bandcamp').AutocompleteSearchResponse> {
+  const endpoint = '/bcsearch_public_api/1/autocomplete_elastic';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Include cookies for personalization (following status)
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch autocomplete search: ${response.statusText}`);
+    }
+
+    return response.json();
+  });
+}
+
+/**
+ * Search within a user's collection or wishlist.
+ * Returns items matching the search query.
+ */
+export async function fetchCollectionSearch(
+  request: import('../types/bandcamp').CollectionSearchRequest
+): Promise<import('../types/bandcamp').CollectionSearchResponse> {
+  const endpoint = '/fancollection/1/search_items';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Required for authentication
+      body: JSON.stringify(request),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Not logged in to Bandcamp. Please log in at bandcamp.com first.');
+    }
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch collection search: ${response.statusText}`);
+    }
+
+    return response.json();
+  });
+}
+
 // Helper to construct album art URL
 export function getAlbumArtUrl(artId: number, size: number = 10): string {
   return `https://f4.bcbits.com/img/a${artId}_${size}.jpg`;

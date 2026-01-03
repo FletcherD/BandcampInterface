@@ -59,12 +59,14 @@ src/
 │   ├── Discography.tsx         # Grid/table view with sorting
 │   ├── PlaybackControl.tsx     # Fixed playback control bar (seek, prev/next)
 │   ├── ThemeToggle.tsx         # Theme toggle button (default/Bandcamp)
-│   └── CollectionNavigation.tsx # Tab navigation between Collection and Wishlist
+│   ├── CollectionNavigation.tsx # Tab navigation between Collection, Wishlist, and Search
+│   └── SearchResults.tsx       # Grouped search results display
 ├── pages/
 │   ├── AlbumPage.tsx        # Album/track detail page with audio player & theme toggle
 │   ├── BandPage.tsx         # Band detail page with discography
 │   ├── CollectionPage.tsx   # User collection with infinite scroll
 │   ├── WishlistPage.tsx     # User wishlist with infinite scroll
+│   ├── SearchPage.tsx       # Unified search across collection, wishlist, and Bandcamp
 │   └── StreamingTest.tsx    # Streaming URL testing page
 ├── App.tsx                  # Router setup & React Query provider
 └── main.tsx                 # Application entry point
@@ -117,6 +119,27 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
      - `older_than`: Pagination token (string, optional)
      - `count`: Number of items per page (default: 40)
    - Returns paginated results with tokens for infinite scroll
+
+6. **Autocomplete Search (Global)**: `POST /api/bcsearch_public_api/1/autocomplete_elastic`
+   - Global search across all of Bandcamp (bands, albums, tracks, fans)
+   - Parameters:
+     - `search_text`: Search query string
+     - `search_filter`: Filter type (empty string for all)
+     - `fan_id`: User's fan ID for personalization
+     - `full_page`: Boolean (false for autocomplete)
+   - Returns up to 50 results with images, URLs, and metadata
+   - Very fast (~50-200ms response time)
+   - Works without authentication but shows personalized data when logged in
+
+7. **Collection/Wishlist Search**: `POST /api/fancollection/1/search_items`
+   - Search within a user's collection or wishlist
+   - Parameters:
+     - `fan_id`: User's fan ID (number)
+     - `search_key`: Search query (partial strings supported)
+     - `search_type`: Either "collection" or "wishlist"
+   - Returns matching items from the user's collection/wishlist
+   - Case-insensitive, incremental search
+   - **Authentication Required**: Must be logged into Bandcamp
 
 ### Browser Extension Setup
 
@@ -232,6 +255,7 @@ Uses `HashRouter` (required for browser extensions) with hash-based URLs.
 
 - `#/` - Collection page (user's Bandcamp collection)
 - `#/wishlist` - Wishlist page (user's Bandcamp wishlist)
+- `#/search` - Unified search page (collection + wishlist + all of Bandcamp)
 - `#/band/:bandId` - Band details page with discography
 - `#/album/:bandId/:tralbumType/:tralbumId` - Album or track details page
 - `#/streaming-test` - Streaming URL test page (development)
@@ -256,11 +280,11 @@ const getTrablumType = (itemType: string) => {
 
 ## Key Features
 
-### Collection & Wishlist Navigation
+### Collection, Wishlist & Search Navigation
 
-Both Collection and Wishlist pages include tab navigation at the top to easily switch between views:
+All collection-related pages include tab navigation at the top to easily switch between views:
 - **Tab Navigation Component** (`CollectionNavigation.tsx`):
-  - Two tabs: "Collection" and "Wishlist"
+  - Three tabs: "Collection", "Wishlist", and "Search"
   - Active tab highlighted with blue underline and text color
   - Inactive tabs show gray with hover effect
   - Uses React Router's `Link` component for client-side navigation
@@ -308,6 +332,60 @@ Both Collection and Wishlist pages include tab navigation at the top to easily s
   - Uses React Query caching - data persists across page reloads
   - Each album is only fetched once and cached permanently
 - Works identically to Collection Page but displays wishlist items instead of owned items
+
+### Search Page
+
+The Search Page provides unified search across your collection, wishlist, and all of Bandcamp:
+
+**Features:**
+- **Single search input** with debounced search (300ms delay)
+- **Real-time search** as you type
+- **Three parallel API calls**:
+  1. Collection search (`/api/fancollection/1/search_items` with `search_type: "collection"`)
+  2. Wishlist search (`/api/fancollection/1/search_items` with `search_type: "wishlist"`)
+  3. Global Bandcamp search (`/api/bcsearch_public_api/1/autocomplete_elastic`)
+- **Intelligent prioritization**:
+  - 🟢 Collection results first (you own these)
+  - 🟡 Wishlist results second (you want these)
+  - 🔵 Bandcamp results last (everything else)
+- **Automatic deduplication**: Albums in your collection/wishlist won't appear in Bandcamp results
+- **Source badges**: Each result shows where it came from (OWNED / WISHLIST / BANDCAMP)
+- **Grouped display**: Results are organized by source with section headers
+- **Fast response**: Autocomplete API returns results in ~50-200ms
+
+**Search Behavior:**
+- Searches album titles, artist names, and metadata
+- Case-insensitive matching
+- Supports partial strings (e.g., "so" matches "Sosa", "Resolve", "Nuits Sonores")
+- Results update automatically as you type
+- Clear button to reset search
+
+**Implementation Details:**
+- **`useUnifiedSearch` hook**: Combines all three search queries in parallel
+- **Debouncing**: Reduces API calls while typing
+- **React Query caching**: Search results are cached for 5 minutes
+- **TypeScript types**: Full type safety for all search results
+- **Result normalization**: Converts different API formats to unified `UnifiedSearchResult` type
+
+**Components:**
+- **SearchPage** (`src/pages/SearchPage.tsx`): Main search page with input and results
+- **SearchResults** (`src/components/SearchResults.tsx`): Displays grouped, prioritized results
+- **CollectionNavigation**: Includes "Search" tab for easy access
+
+**Example Result Structure:**
+```typescript
+interface UnifiedSearchResult {
+  id: string;              // Unique ID: "{type}-{id}"
+  type: 'band' | 'album' | 'track' | 'fan';
+  name: string;            // Album/band/track name
+  band_name?: string;      // Artist name (for albums/tracks)
+  album_name?: string;     // Album name (for tracks)
+  url: string;             // Bandcamp URL or internal route
+  image_url?: string;      // Album art or band image
+  source: 'collection' | 'wishlist' | 'bandcamp';
+  source_data: AutocompleteSearchResult | CollectionItem;
+}
+```
 
 ### Band Page
 

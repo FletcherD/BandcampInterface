@@ -107,7 +107,7 @@ Root domain: bandcamp.com
   - `older_than`: Pagination token
 - **Authentication**: None required (public access with fan_id)
 
-### 14. User 
+### 15. User Wishlist
 - **Endpoint**: `POST /api/mobile/24/fan_wishlist`
 - **Purpose**: Get a user's wishlist
 - **Parameters**:
@@ -115,14 +115,94 @@ Root domain: bandcamp.com
   - `older_than`: Pagination token
 - **Authentication**: None required (public access with fan_id)
 
+### 16. Autocomplete Search (Elastic)
+- **Endpoint**: `POST /api/bcsearch_public_api/1/autocomplete_elastic`
+- **Purpose**: Global search autocomplete across all of Bandcamp (bands, albums, tracks, fans)
+- **Parameters**:
+  - `search_text`: Search query string
+  - `search_filter`: Filter type (empty string for all, or specific type)
+  - `fan_id`: User's fan ID (for personalization, e.g., showing followed status)
+  - `full_page`: Boolean - whether this is for full page results (false for autocomplete dropdown)
+- **Authentication**: Optional (works without login, but shows personalized data with cookies)
+- **Returns**: JSON object with:
+  - `auto.results[]`: Array of search results
+    - `type`: Result type ('b' = band/artist, 'a' = album, 't' = track, 'f' = fan)
+    - `id`: Item ID (band_id, album_id, track_id, or fan_id)
+    - `name`: Item name/title
+    - `item_url_root`: Base Bandcamp URL for the item
+    - `item_url_path`: Full URL path (for albums/tracks)
+    - `band_name`: Artist name (for albums/tracks)
+    - `album_name`: Album name (for tracks)
+    - `img`: Image URL (album art or band image)
+    - `location`: Location string (for bands)
+    - `tag_names[]`: Array of genre tags (for bands)
+    - `genre_name`: Primary genre (for bands)
+    - `following`: Boolean - whether user follows this band (requires authentication)
+    - `stat_params`: Search analytics parameters
+  - `tag.matches[]`: Tag/genre suggestions
+  - `genre`: Genre-related matches
+- **Notes**:
+  - Returns up to 50 results per request
+  - Results are ranked by relevance (search_rank field)
+  - Very fast response time (~50-200ms)
+  - Used for live search/autocomplete functionality
+
+### 17. Collection/Wishlist Search
+- **Endpoint**: `POST /api/fancollection/1/search_items`
+- **Purpose**: Search within a user's collection or wishlist
+- **Parameters**:
+  - `fan_id`: User's fan ID (number)
+  - `search_key`: Search query string (can be partial, e.g., "s", "so", "some artist")
+  - `search_type`: Type of search - either "collection" or "wishlist"
+- **Authentication**: Requires login cookies (must be the same user as fan_id)
+- **Returns**: JSON object with:
+  - `tralbums[]`: Array of matching albums/tracks from collection/wishlist
+    - All standard collection item fields (see Collection Items endpoint)
+    - Includes: `item_title`, `band_name`, `item_url`, `item_art_id`, `added`, `purchased`, etc.
+    - Each item is a full collection item object with metadata
+- **Notes**:
+  - Searches across album titles, artist names, and other metadata
+  - Returns results as user types (incremental search)
+  - Results are not paginated - returns all matches
+  - Case-insensitive search
+  - Matches partial strings (e.g., "so" matches "Sosa", "Resolve", "Nuits Sonores")
+
 ## UNKNOWN Endpoints
 - POST `/api/mobile/24/collected_by`
 - Params: {tralbum_keys}
 
 
-An example valid album detail query that can be used for testing: {"band_id":2197988008, "tralbum_type":"a", "tralbum_id":3616265308}
-An example valid track detail query that can be used for testing: {"band_id":2197988008, "tralbum_type":"t", "tralbum_id":2875186876}
-An example valid user collection/wishlist query that can be used for testing: {"fan_id":621507}
+### Example Queries
+
+**Album Details:**
+```json
+{"band_id":2197988008, "tralbum_type":"a", "tralbum_id":3616265308}
+```
+
+**Track Details:**
+```json
+{"band_id":2197988008, "tralbum_type":"t", "tralbum_id":2875186876}
+```
+
+**User Collection/Wishlist:**
+```json
+{"fan_id":621507}
+```
+
+**Autocomplete Search:**
+```json
+{"search_text":"twoism", "search_filter":"", "fan_id":621507, "full_page":false}
+```
+
+**Collection Search:**
+```json
+{"fan_id":621507, "search_key":"so", "search_type":"collection"}
+```
+
+**Wishlist Search:**
+```json
+{"fan_id":621507, "search_key":"ambient", "search_type":"wishlist"}
+```
 
 ## Pagination
 

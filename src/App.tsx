@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { createPerQueryPersister } from './lib/persister';
 import CollectionPage from './pages/CollectionPage';
 import WishlistPage from './pages/WishlistPage';
+import SearchPage from './pages/SearchPage';
 import BandPage from './pages/BandPage';
 import AlbumPage from './pages/AlbumPage';
 import StreamingTest from './pages/StreamingTest';
@@ -32,6 +33,7 @@ function App() {
         <Routes>
           <Route path="/" element={<CollectionPage />} />
           <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/search" element={<SearchPage />} />
           <Route path="/band/:bandId" element={<BandPage />} />
           <Route path="/album/:bandId/:tralbumType/:tralbumId" element={<AlbumPage />} />
           <Route path="/streaming-test" element={<StreamingTest />} />

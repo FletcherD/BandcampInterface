@@ -4,6 +4,7 @@ export function CollectionNavigation() {
   const location = useLocation();
   const isCollection = location.pathname === '/' || location.pathname === '';
   const isWishlist = location.pathname === '/wishlist';
+  const isSearch = location.pathname === '/search';
 
   return (
     <div className="flex gap-6 border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -26,6 +27,16 @@ export function CollectionNavigation() {
         }`}
       >
         Wishlist
+      </Link>
+      <Link
+        to="/search"
+        className={`pb-3 px-1 font-medium transition-colors ${
+          isSearch
+            ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+        }`}
+      >
+        Search
       </Link>
     </div>
   );

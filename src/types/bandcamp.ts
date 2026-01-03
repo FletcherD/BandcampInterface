@@ -201,3 +201,100 @@ export interface CurrentUser {
   username?: string;
   name?: string;
 }
+
+// Search API types
+
+export interface AutocompleteSearchRequest {
+  search_text: string;
+  search_filter: string;
+  fan_id: number;
+  full_page: boolean;
+}
+
+export interface AutocompleteSearchResultBase {
+  type: 'b' | 'a' | 't' | 'f';  // band, album, track, fan
+  id: number;
+  name: string;
+  img?: string;
+  item_url_root: string;
+  stat_params: string;
+}
+
+export interface AutocompleteSearchResultBand extends AutocompleteSearchResultBase {
+  type: 'b';
+  img_id: number | null;
+  location: string;
+  is_label: boolean;
+  tag_names: string[];
+  genre_name: string;
+  following: boolean;
+}
+
+export interface AutocompleteSearchResultAlbum extends AutocompleteSearchResultBase {
+  type: 'a';
+  art_id: number;
+  band_id: number;
+  band_name: string;
+  item_url_path: string;
+  tag_names: string[] | null;
+}
+
+export interface AutocompleteSearchResultTrack extends AutocompleteSearchResultBase {
+  type: 't';
+  art_id: number;
+  band_id: number;
+  band_name: string;
+  album_name: string;
+  album_id: number;
+  item_url_path: string;
+}
+
+export interface AutocompleteSearchResultFan extends AutocompleteSearchResultBase {
+  type: 'f';
+  // Fans have minimal info in search results
+}
+
+export type AutocompleteSearchResult =
+  | AutocompleteSearchResultBand
+  | AutocompleteSearchResultAlbum
+  | AutocompleteSearchResultTrack
+  | AutocompleteSearchResultFan;
+
+export interface AutocompleteSearchResponse {
+  auto: {
+    results: AutocompleteSearchResult[];
+    stat_params_for_tag: string;
+    time_ms: number;
+  };
+  tag: {
+    matches: any[];
+    count: number;
+    time_ms: number;
+  };
+  genre: Record<string, any>;
+}
+
+export interface CollectionSearchRequest {
+  fan_id: number;
+  search_key: string;
+  search_type: 'collection' | 'wishlist';
+}
+
+export interface CollectionSearchResponse {
+  tralbums: CollectionItem[];
+}
+
+// Unified search result with source information
+export type SearchResultSource = 'collection' | 'wishlist' | 'bandcamp';
+
+export interface UnifiedSearchResult {
+  id: string;  // Unique identifier: "{type}-{id}"
+  type: 'band' | 'album' | 'track' | 'fan';
+  name: string;
+  band_name?: string;
+  album_name?: string;
+  url: string;
+  image_url?: string;
+  source: SearchResultSource;
+  source_data: AutocompleteSearchResult | CollectionItem;
+}
