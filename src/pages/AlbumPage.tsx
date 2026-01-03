@@ -112,12 +112,16 @@ function AlbumPageContent() {
     );
   }
 
+  // Only apply bandcamp theme if the style is actually loaded
+  // This prevents ugly intermediate state while style is loading
+  const effectiveTheme = theme === 'bandcamp' && bandcampStyle ? 'bandcamp' : 'default';
+
   return (
     <AudioPlayerProvider>
       <div
         className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 pb-32"
-        data-theme={theme}
-        data-has-bg-image={theme === 'bandcamp' && !!bandcampStyle?.backgroundImage}
+        data-theme={effectiveTheme}
+        data-has-bg-image={effectiveTheme === 'bandcamp' && !!bandcampStyle?.backgroundImage}
         style={cssVariables}
       >
         <ThemeToggle styleLoading={styleLoading} styleError={styleError} />

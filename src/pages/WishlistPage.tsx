@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { useFanWishlist, useEnrichedCollectionItems } from '../api/queries';
 import Discography from '../components/Discography';
+import { CollectionNavigation } from '../components/CollectionNavigation';
 import type { CollectionDisplayItem } from '../types/bandcamp';
 
 // Test fan_id from API_ENDPOINTS.md
@@ -85,6 +86,9 @@ export default function WishlistPage() {
     );
   }
 
+  // Determine if we should show the status bar
+  const showStatusBar = isFetchingNextPage || hasNextPage || stats.remaining > 0 || stats.rateLimited > 0;
+
   // Determine status message
   const getStatusMessage = () => {
     const messages: string[] = [];
@@ -101,7 +105,8 @@ export default function WishlistPage() {
       messages.push(`⏳ Rate limited, waiting to retry ${stats.rateLimited} album${stats.rateLimited !== 1 ? 's' : ''}...`);
     } else if (stats.remaining > 0) {
       messages.push(`Fetching details for ${stats.remaining} album${stats.remaining !== 1 ? 's' : ''}`);
-    } else if (stats.loaded > 0) {
+    } else if (stats.loaded > 0 && (isFetchingNextPage || hasNextPage)) {
+      // Only show "loaded" message if still loading wishlist pages
       messages.push(`Album details loaded (${stats.loaded}/${stats.total})`);
     }
 
@@ -113,17 +118,20 @@ export default function WishlistPage() {
       <div className="max-w-7xl mx-auto p-6">
         <h1 className="text-4xl font-bold mb-6">My Wishlist</h1>
 
-        {/* Status Bar */}
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center gap-3">
-            {(isFetchingNextPage || hasNextPage || stats.remaining > 0) && (
+        {/* Navigation Tabs */}
+        <CollectionNavigation />
+
+        {/* Status Bar - only show when loading */}
+        {showStatusBar && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center gap-3">
               <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-            )}
-            <span className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-              {getStatusMessage()}
-            </span>
+              <span className="text-sm text-blue-900 dark:text-blue-100 font-medium">
+                {getStatusMessage()}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         <Discography mode="collection" items={albums} />
       </div>

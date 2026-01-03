@@ -52,13 +52,14 @@ src/
 ├── styles/
 │   └── bandcamp-theme.css   # Bandcamp theme CSS with dynamic variables
 ├── components/
-│   ├── AlbumArt.tsx         # Album artwork display component
-│   ├── TrackList.tsx        # Track listing with play buttons & quality indicators
-│   ├── BandInfo.tsx         # Band/label info card (clickable)
-│   ├── TagList.tsx          # Genre/location tags display
-│   ├── Discography.tsx      # Grid/table view with sorting
-│   ├── PlaybackControl.tsx  # Fixed playback control bar (seek, prev/next)
-│   └── ThemeToggle.tsx      # Theme toggle button (default/Bandcamp)
+│   ├── AlbumArt.tsx            # Album artwork display component
+│   ├── TrackList.tsx           # Track listing with play buttons & quality indicators
+│   ├── BandInfo.tsx            # Band/label info card (clickable)
+│   ├── TagList.tsx             # Genre/location tags display
+│   ├── Discography.tsx         # Grid/table view with sorting
+│   ├── PlaybackControl.tsx     # Fixed playback control bar (seek, prev/next)
+│   ├── ThemeToggle.tsx         # Theme toggle button (default/Bandcamp)
+│   └── CollectionNavigation.tsx # Tab navigation between Collection and Wishlist
 ├── pages/
 │   ├── AlbumPage.tsx        # Album/track detail page with audio player & theme toggle
 │   ├── BandPage.tsx         # Band detail page with discography
@@ -248,14 +249,27 @@ const getTrablumType = (itemType: string) => {
 
 ## Key Features
 
+### Collection & Wishlist Navigation
+
+Both Collection and Wishlist pages include tab navigation at the top to easily switch between views:
+- **Tab Navigation Component** (`CollectionNavigation.tsx`):
+  - Two tabs: "Collection" and "Wishlist"
+  - Active tab highlighted with blue underline and text color
+  - Inactive tabs show gray with hover effect
+  - Uses React Router's `Link` component for client-side navigation
+  - Automatically detects current page using `useLocation()` hook
+
 ### Collection Page
 
 - Display user's Bandcamp collection
+- **Tab navigation** to switch to Wishlist page
 - **Auto-loads all collection items** on page load (no manual pagination)
-- **Status bar** showing real-time progress:
-  - Collection items loaded
-  - Album details being fetched in background
+- **Status bar** showing real-time progress (automatically hidden when complete):
+  - Only visible while loading collection pages or album details
+  - Shows collection items loaded count
+  - Shows album details being fetched in background
   - Visual spinner during active operations
+  - Automatically hides when all loading is complete
 - Switchable views: grid or table
 - Sorting by title, artist name, release date, or date added (table view only)
 - **Background Data Enrichment**: Automatically fetches album details for each collection item to get release dates
@@ -267,11 +281,14 @@ const getTrablumType = (itemType: string) => {
 ### Wishlist Page
 
 - Display user's Bandcamp wishlist
+- **Tab navigation** to switch to Collection page
 - **Auto-loads all wishlist items** on page load (no manual pagination)
-- **Status bar** showing real-time progress:
-  - Wishlist items loaded
-  - Album details being fetched in background
+- **Status bar** showing real-time progress (automatically hidden when complete):
+  - Only visible while loading wishlist pages or album details
+  - Shows wishlist items loaded count
+  - Shows album details being fetched in background
   - Visual spinner during active operations
+  - Automatically hides when all loading is complete
 - Switchable views: grid or table
 - Sorting by title, artist name, release date, or date added (table view only)
 - **Background Data Enrichment**: Automatically fetches album details for each wishlist item to get release dates
@@ -372,6 +389,13 @@ The Album Page includes a theme toggle that allows switching between two visual 
      - Previously: Toggling to default style before style loaded would disable the button
      - Now: Distinguishes between "loading" (allow toggle) and "failed" (disable button)
      - Props: `styleLoading` and `styleError` passed from AlbumPage query state
+
+5. **Theme Application Logic** (`AlbumPage.tsx:115-117`):
+   - Uses "effective theme" to prevent ugly intermediate state
+   - If user's theme preference is 'bandcamp' but style isn't loaded yet, applies 'default' theme
+   - Only applies 'bandcamp' theme when `bandcampStyle` is actually available
+   - Seamlessly transitions from default → bandcamp once style loads
+   - Code: `const effectiveTheme = theme === 'bandcamp' && bandcampStyle ? 'bandcamp' : 'default'`
 
 **Implementation Details:**
 
