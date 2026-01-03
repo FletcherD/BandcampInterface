@@ -1,13 +1,13 @@
 import { useMemo, useEffect } from 'react';
-import { useFanWishlist, useEnrichedCollectionItems } from '../api/queries';
+import { useFanWishlist, useEnrichedCollectionItems, useCurrentUser } from '../api/queries';
 import Discography from '../components/Discography';
 import { CollectionNavigation } from '../components/CollectionNavigation';
 import type { CollectionDisplayItem } from '../types/bandcamp';
 
-// Test fan_id from API_ENDPOINTS.md
-const TEST_FAN_ID = 621507;
-
 export default function WishlistPage() {
+  // Fetch current logged-in user
+  const { data: currentUser, isLoading: isLoadingUser, error: userError } = useCurrentUser();
+
   const {
     data,
     isLoading,
@@ -15,7 +15,7 @@ export default function WishlistPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useFanWishlist(TEST_FAN_ID);
+  } = useFanWishlist(currentUser?.fan_id);
 
   // Auto-load all pages immediately
   useEffect(() => {
@@ -57,6 +57,60 @@ export default function WishlistPage() {
 
   // Use enriched albums if available, otherwise use base albums
   const albums = enrichedAlbums.length > 0 ? enrichedAlbums : baseAlbums;
+
+  // Handle user authentication loading and errors first
+  if (isLoadingUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading user session...</div>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="text-xl text-red-500">
+          Error: Not logged in to Bandcamp
+        </div>
+        <div className="text-gray-600 dark:text-gray-400">
+          Please log in at{' '}
+          <a
+            href="https://bandcamp.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            bandcamp.com
+          </a>{' '}
+          and reload this extension.
+        </div>
+      </div>
+    );
+  }
+
+  // Check if we successfully loaded user but don't have a valid fan_id
+  if (!isLoadingUser && (!currentUser?.fan_id || currentUser.fan_id <= 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="text-xl text-red-500">
+          Error: Could not find your Bandcamp user ID
+        </div>
+        <div className="text-gray-600 dark:text-gray-400">
+          Please make sure you are logged in at{' '}
+          <a
+            href="https://bandcamp.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            bandcamp.com
+          </a>{' '}
+          and reload this extension.
+        </div>
+      </div>
+    );
+  }
 
   // Only show loading screen if we have no data AND we're loading
   // This allows cached data to display immediately

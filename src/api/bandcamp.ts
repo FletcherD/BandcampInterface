@@ -1,4 +1,4 @@
-import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest, FanCollection, FanCollectionRequest, StreamingUrl } from '../types/bandcamp';
+import type { AlbumDetails, AlbumDetailsRequest, BandDetails, BandDetailsRequest, FanCollection, FanCollectionRequest, StreamingUrl, CurrentUser } from '../types/bandcamp';
 
 // Direct API calls to Bandcamp (for browser extension)
 const BANDCAMP_API_BASE = 'https://bandcamp.com/api';
@@ -220,6 +220,45 @@ export async function fetchFanWishlist(
     }
 
     return response.json();
+  });
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUser> {
+  const endpoint = '/design_system/1/menubar';
+
+  return globalRateLimiter.executeRequest(endpoint, async () => {
+    const response = await fetch(`${BANDCAMP_API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Required for authentication
+      body: JSON.stringify({}),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Not logged in to Bandcamp. Please log in at bandcamp.com first.');
+    }
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5', 10);
+      globalRateLimiter.setRateLimited(endpoint, retryAfter);
+      throw new RateLimitError(retryAfter);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch current user: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Extract fan_id from the menubar response
+    // The API returns: { fan: { id, name, username } }
+    return {
+      fan_id: data.fan?.id,
+      username: data.fan?.username,
+      name: data.fan?.name,
+    };
   });
 }
 

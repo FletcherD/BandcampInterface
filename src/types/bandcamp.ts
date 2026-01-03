@@ -195,3 +195,9 @@ export interface FanCollectionRequest {
   fan_id: number;
   older_than?: string;
 }
+
+export interface CurrentUser {
+  fan_id: number;
+  username?: string;
+  name?: string;
+}

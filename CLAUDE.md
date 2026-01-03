@@ -83,19 +83,26 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
 
 ### Endpoints Used
 
-1. **Album/Track Details**: `POST /api/mobile/24/tralbum_details`
+1. **Current User**: `POST /api/design_system/1/menubar`
+   - Fetches current logged-in user session data
+   - Parameters: Empty object `{}`
+   - Returns: User data including `fan_id`, `username`, and `name`
+   - **Authentication Required**: Must be logged into Bandcamp
+   - Used to automatically detect the current user instead of hardcoding fan_id
+
+2. **Album/Track Details**: `POST /api/mobile/24/tralbum_details`
    - Fetches detailed information about an album or track
    - Parameters:
      - `band_id`: Artist ID (number)
      - `tralbum_type`: 'a' for album, 't' for track
      - `tralbum_id`: Album or track ID (number)
 
-2. **Band Details**: `POST /api/mobile/24/band_details`
+3. **Band Details**: `POST /api/mobile/24/band_details`
    - Fetches band information and complete discography
    - Parameters:
      - `band_id`: Artist ID (number)
 
-3. **Fan Collection**: `POST /api/mobile/24/fan_collection`
+4. **Fan Collection**: `POST /api/mobile/24/fan_collection`
    - Fetches a user's Bandcamp collection with pagination
    - Parameters:
      - `fan_id`: User/fan ID (number)
@@ -103,7 +110,7 @@ API_ENDPOINTS.md             # Documentation of discovered API endpoints
      - `count`: Number of items per page (default: 40)
    - Returns paginated results with tokens for infinite scroll
 
-4. **Fan Wishlist**: `POST /api/mobile/24/fan_wishlist`
+5. **Fan Wishlist**: `POST /api/mobile/24/fan_wishlist`
    - Fetches a user's Bandcamp wishlist with pagination
    - Parameters:
      - `fan_id`: User/fan ID (number)
@@ -261,9 +268,11 @@ Both Collection and Wishlist pages include tab navigation at the top to easily s
 
 ### Collection Page
 
+- **Automatically detects current logged-in user** via `useCurrentUser()` hook
 - Display user's Bandcamp collection
 - **Tab navigation** to switch to Wishlist page
 - **Auto-loads all collection items** on page load (no manual pagination)
+- **Authentication Required**: Shows error message if user is not logged into Bandcamp
 - **Status bar** showing real-time progress (automatically hidden when complete):
   - Only visible while loading collection pages or album details
   - Shows collection items loaded count
@@ -280,9 +289,11 @@ Both Collection and Wishlist pages include tab navigation at the top to easily s
 
 ### Wishlist Page
 
+- **Automatically detects current logged-in user** via `useCurrentUser()` hook
 - Display user's Bandcamp wishlist
 - **Tab navigation** to switch to Collection page
 - **Auto-loads all wishlist items** on page load (no manual pagination)
+- **Authentication Required**: Shows error message if user is not logged into Bandcamp
 - **Status bar** showing real-time progress (automatically hidden when complete):
   - Only visible while loading wishlist pages or album details
   - Shows wishlist items loaded count
@@ -570,6 +581,13 @@ To clear the cache manually (if needed):
 All hooks inherit the global caching configuration (Infinity staleTime, 24hr gcTime):
 
 ```typescript
+// Fetch current logged-in user (cached for 1 hour)
+useCurrentUser()
+// Returns: { data: CurrentUser, isLoading, error }
+// - data: { fan_id: number, username?: string, name?: string }
+// - Automatically used by CollectionPage and WishlistPage to detect current user
+// - Shows error if user is not logged into Bandcamp
+
 // Fetch album/track details (cached permanently)
 useAlbumDetails({ band_id, tralbum_type, tralbum_id })
 
@@ -749,6 +767,7 @@ const { bandId } = useParams();
 ### TypeScript Types
 
 All API response types are defined in `src/types/bandcamp.ts`:
+- `CurrentUser` - Current logged-in user data (includes `fan_id`, `username`, `name`)
 - `AlbumDetails` - Complete album/track information
 - `BandDetails` - Band information with discography
 - `Track` - Individual track information
@@ -1077,13 +1096,11 @@ Potential features to add:
 2. Use browser DevTools to inspect API calls and get `band_id`
 3. Navigate directly to `/band/{band_id}` in the browser
 
-**Collection Page:**
-1. The default collection uses `TEST_FAN_ID = 621507` in `CollectionPage.tsx`
-2. To test with a different user's collection:
-   - Find a Bandcamp user profile
-   - Inspect API calls in DevTools to get their `fan_id`
-   - Update the `TEST_FAN_ID` constant in `CollectionPage.tsx`
-3. Test infinite scroll by scrolling to the bottom of the page
+**Collection & Wishlist Pages:**
+1. **Automatically detects the logged-in user** - No configuration needed!
+2. Ensure you are logged into Bandcamp in your browser before using the extension
+3. The extension will fetch your collection/wishlist automatically using the `useCurrentUser()` hook
+4. If not logged in, you'll see an error message with a link to bandcamp.com
 
 ## Notes
 

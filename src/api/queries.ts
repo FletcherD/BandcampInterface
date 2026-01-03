@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, fetchFanWishlist, extractPageStyle, RateLimitError } from './bandcamp';
+import { fetchAlbumDetails, fetchBandDetails, fetchFanCollection, fetchFanWishlist, fetchCurrentUser, extractPageStyle, RateLimitError } from './bandcamp';
 import type { AlbumDetailsRequest, BandDetailsRequest, CollectionDisplayItem } from '../types/bandcamp';
 
 export function useAlbumDetails(request: AlbumDetailsRequest) {
@@ -16,29 +16,41 @@ export function useBandDetails(request: BandDetailsRequest) {
   });
 }
 
-export function useFanCollection(fanId: number) {
-  return useInfiniteQuery({
-    queryKey: ['collection', fanId],
-    queryFn: ({ pageParam }) => fetchFanCollection({ fan_id: fanId, older_than: pageParam }),
-    getNextPageParam: (lastPage) => {
-      // Return the token of the last item for the next page
-      const lastItem = lastPage.items[lastPage.items.length - 1];
-      return lastItem?.token;
-    },
-    initialPageParam: undefined as string | undefined,
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: fetchCurrentUser,
+    staleTime: 1000 * 60 * 60, // 1 hour - user session doesn't change often
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    retry: 1, // Only retry once for auth failures
   });
 }
 
-export function useFanWishlist(fanId: number) {
+export function useFanCollection(fanId: number | undefined) {
   return useInfiniteQuery({
-    queryKey: ['wishlist', fanId],
-    queryFn: ({ pageParam }) => fetchFanWishlist({ fan_id: fanId, older_than: pageParam }),
+    queryKey: ['collection', fanId],
+    queryFn: ({ pageParam }) => fetchFanCollection({ fan_id: fanId!, older_than: pageParam }),
     getNextPageParam: (lastPage) => {
       // Return the token of the last item for the next page
       const lastItem = lastPage.items[lastPage.items.length - 1];
       return lastItem?.token;
     },
     initialPageParam: undefined as string | undefined,
+    enabled: !!fanId && fanId > 0, // Only run when we have a valid fan_id
+  });
+}
+
+export function useFanWishlist(fanId: number | undefined) {
+  return useInfiniteQuery({
+    queryKey: ['wishlist', fanId],
+    queryFn: ({ pageParam }) => fetchFanWishlist({ fan_id: fanId!, older_than: pageParam }),
+    getNextPageParam: (lastPage) => {
+      // Return the token of the last item for the next page
+      const lastItem = lastPage.items[lastPage.items.length - 1];
+      return lastItem?.token;
+    },
+    initialPageParam: undefined as string | undefined,
+    enabled: !!fanId && fanId > 0, // Only run when we have a valid fan_id
   });
 }
 
