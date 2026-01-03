@@ -27,7 +27,7 @@ function AlbumPageContent() {
   });
 
   // Fetch and cache Bandcamp styling
-  const { data: pageStyle, isError: styleError } = useBandcampPageStyle(album?.bandcamp_url);
+  const { data: pageStyle, isError: styleError, isLoading: styleLoading } = useBandcampPageStyle(album?.bandcamp_url);
 
   // Update theme context when style is fetched
   useEffect(() => {
@@ -120,7 +120,7 @@ function AlbumPageContent() {
         data-has-bg-image={theme === 'bandcamp' && !!bandcampStyle?.backgroundImage}
         style={cssVariables}
       >
-        <ThemeToggle />
+        <ThemeToggle styleLoading={styleLoading} styleError={styleError} />
         <div className="max-w-6xl mx-auto p-6 album-page-content">
           <div className="grid md:grid-cols-2 gap-8 mb-8">
             {/* Left column - Album art */}

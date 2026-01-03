@@ -366,6 +366,12 @@ The Album Page includes a theme toggle that allows switching between two visual 
    - Fixed position in top-right corner
    - Shows current theme and toggles on click
    - Always accessible across page navigation
+   - **Loading State Handling**: Displays "⏳ Loading Style..." while style is being fetched
+   - **Error State Handling**: Disables button only if style fetch fails (CORS/custom domain)
+   - **Race Condition Fix**: Button remains functional even if toggled before style finishes loading
+     - Previously: Toggling to default style before style loaded would disable the button
+     - Now: Distinguishes between "loading" (allow toggle) and "failed" (disable button)
+     - Props: `styleLoading` and `styleError` passed from AlbumPage query state
 
 **Implementation Details:**
 
