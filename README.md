@@ -47,34 +47,50 @@ An alternative interface for Bandcamp, built as a browser extension. Browse your
 
 ## Installation
 
-### Chrome
+### Option 1: Download Pre-Built Release (Easiest)
 
-1. Download or clone this repository
-2. Build the extension:
-   ```bash
-   npm install
-   npm run build
-   ```
-3. Open Chrome and navigate to `chrome://extensions/`
-4. Enable **Developer mode** (toggle in top-right corner)
-5. Click **Load unpacked**
-6. Select the `dist/` folder from the repository
-7. The Bandcamp Interface icon will appear in your extensions toolbar
+**Recommended for most users** - No build tools required!
 
-### Firefox
+1. Go to the [Releases page](https://github.com/yourusername/BandcampInterface/releases)
+2. Download the latest release:
+   - **Chrome**: Download `bandcamp-interface-chrome.zip`
+   - **Firefox**: Download `bandcamp-interface-firefox.zip`
+3. Unzip the downloaded file
 
-1. Download or clone this repository
-2. Build the extension:
-   ```bash
-   npm install
-   npm run build
-   ```
-3. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
-4. Click **Load Temporary Add-on**
-5. Navigate to the `dist/` folder and select any file (e.g., `manifest.json`)
-6. The extension will be loaded temporarily (until you restart Firefox)
+**Chrome:**
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable **Developer mode** (toggle in top-right corner)
+3. Click **Load unpacked**
+4. Select the unzipped folder
+5. The Bandcamp Interface icon will appear in your extensions toolbar
+
+**Firefox:**
+1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on**
+3. Navigate to the unzipped folder and select `manifest.json`
+4. The extension will be loaded temporarily (until you restart Firefox)
 
 **Note**: For permanent installation in Firefox, the extension would need to be signed by Mozilla.
+
+### Option 2: Build from Source
+
+**For developers** who want to modify the code or build the latest version:
+
+**Chrome & Firefox:**
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/yourusername/BandcampInterface.git
+   cd BandcampInterface
+   ```
+
+2. Build the extension:
+   ```bash
+   npm install
+   npm run build
+   ```
+
+3. Follow the same loading instructions as Option 1, but select the `dist/` folder instead of the unzipped folder
 
 ## Usage
 
