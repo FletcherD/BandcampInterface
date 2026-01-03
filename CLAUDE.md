@@ -1009,9 +1009,24 @@ export default defineConfig({
 ```css
 /* src/index.css */
 @import "tailwindcss";
+
+/* Global body styling to prevent white flash/area at bottom */
+body {
+  @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  @apply bg-white dark:bg-gray-900;
+}
 ```
 
 No `tailwind.config.js` is needed - Tailwind v4 uses CSS-based configuration.
+
+**Global Styling:**
+- Body and HTML elements are styled with matching background colors to prevent white areas at the bottom of pages
+- Ensures consistent background across all pages, especially before theme-specific styles load
 
 ## Dark Mode Support
 
