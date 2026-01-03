@@ -1,4 +1,4 @@
-import { formatDuration } from '../api/bandcamp';
+import { formatDuration, isCompilationAlbum } from '../api/bandcamp';
 import type { Track } from '../types/bandcamp';
 import { useAlbumStreamingUrls, getTrackStreamingUrl } from '../api/streaming-queries';
 import { useAudioPlayer } from '../contexts/AudioPlayerContext';
@@ -94,9 +94,18 @@ function TrackPlayer({ track, albumUrl, allTracks }: { track: Track; albumUrl: s
 }
 
 export default function TrackList({ tracks, albumUrl }: TrackListProps) {
+  const isCompilation = isCompilationAlbum(tracks);
+
   return (
     <div className="space-y-2">
-      <h2 className="text-2xl font-bold mb-4">Tracks</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        Tracks
+        {isCompilation && (
+          <span className="ml-3 text-sm font-normal text-gray-600 dark:text-gray-400">
+            (Various Artists)
+          </span>
+        )}
+      </h2>
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {tracks.map((track) => (
           <div
@@ -109,6 +118,11 @@ export default function TrackList({ tracks, albumUrl }: TrackListProps) {
               </span>
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{track.title}</div>
+                {isCompilation && track.band_name && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {track.band_name}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-4 flex-shrink-0">

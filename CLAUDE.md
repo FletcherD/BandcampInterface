@@ -414,6 +414,8 @@ interface UnifiedSearchResult {
   - Track numbers
   - Track titles
   - Durations (formatted as MM:SS)
+  - **Compilation album support**: Automatically detects albums with multiple artists and displays artist name below each track title
+  - **"Various Artists" indicator** shown in header for compilation albums
   - **Play buttons** for each track with quality indicators
   - Color-coded buttons (green for HQ, blue for standard, red for playing)
 - **Unified Playback Control** (fixed at bottom):
@@ -551,6 +553,10 @@ formatDuration(seconds: number): string
 
 // Release date: Unix timestamp → "Month Day, Year"
 formatReleaseDate(timestamp: number): string
+
+// Check if an album is a compilation (has multiple artists)
+isCompilationAlbum(tracks: { band_name: string }[]): boolean
+// Returns true if tracks have 2 or more different artists
 ```
 
 ### Streaming URLs
@@ -815,6 +821,57 @@ npm run dev
 ```
 
 However, API calls will fail due to CORS restrictions. For full functionality testing, you must build and load the extension.
+
+### API Testing Utility
+
+A command-line utility (`test-api.js`) is available for testing Bandcamp API endpoints without needing to build and load the extension:
+
+```bash
+# Get current user info
+node test-api.js menubar
+
+# Get album/track details (automatically detects compilations)
+node test-api.js tralbum <band_id> <type> <tralbum_id>
+
+# Get band details
+node test-api.js band <band_id>
+
+# Get user collection
+node test-api.js collection <fan_id>
+
+# Get user wishlist
+node test-api.js wishlist <fan_id>
+
+# Search collection
+node test-api.js search-collection <fan_id> <search_query>
+
+# Search wishlist
+node test-api.js search-wishlist <fan_id> <search_query>
+
+# Global autocomplete search
+node test-api.js autocomplete <search_query> [fan_id]
+
+# Add --json flag for raw JSON output
+node test-api.js tralbum 752078214 a 2011188266 --json
+```
+
+**Example - Testing a compilation album:**
+```bash
+node test-api.js tralbum 752078214 a 2011188266
+# Output:
+# ✅ Album/Track details:
+#    Title: 13 Weeks of Summer
+#    Album Artist: Attacknine Records
+#    Tracks: 27
+#
+# 🎵 COMPILATION ALBUM detected!
+#    24 different artists across 27 tracks:
+#    Track 1: Glossy Ceramic Harmonies - Millieu
+#    Track 2: Epsom Salt - Hi-Fi
+#    ...
+```
+
+The utility automatically detects compilation albums (albums with multiple artists) and displays artist information for each track.
 
 ## Important Implementation Details
 

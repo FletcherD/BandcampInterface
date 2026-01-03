@@ -359,6 +359,15 @@ export function formatReleaseDate(timestamp: number): string {
 }
 
 /**
+ * Detects if an album is a compilation (has tracks by different artists).
+ * Returns true if tracks have 2 or more different artists.
+ */
+export function isCompilationAlbum(tracks: { band_name: string }[]): boolean {
+  const uniqueArtists = new Set(tracks.map(t => t.band_name).filter(Boolean));
+  return uniqueArtists.size > 1;
+}
+
+/**
  * Extracts streaming URLs from an album/track page HTML.
  * This is a fallback method when the mobile API doesn't return mp3-v0 URLs.
  *
