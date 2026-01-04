@@ -19,6 +19,28 @@
 
 An alternative interface to Bandcamp built as a browser extension (Chrome/Firefox compatible). The application fetches data from Bandcamp's internal API and displays it in a clean, modern interface with navigation between band and album pages. Built with React and distributed as a browser extension to enable direct API access with user authentication.
 
+## Documentation
+
+This project has two types of documentation:
+
+1. **README.md** - Public-facing documentation for end users
+   - Installation instructions for Chrome and Firefox
+   - Feature overview with descriptions
+   - Usage guide and troubleshooting
+   - Privacy policy and disclaimer about unofficial API usage
+   - Contributing guidelines
+
+2. **CLAUDE.md** (this file) - Developer documentation for AI assistants and contributors
+   - Complete architecture and implementation details
+   - API endpoints and integration patterns
+   - Component structure and data flow
+   - Caching strategies and performance optimizations
+   - Code examples and best practices
+
+**When to update each:**
+- Update **README.md** when adding user-facing features or changing installation/usage steps
+- Update **CLAUDE.md** when making architectural changes, adding new components, or changing implementation patterns
+
 ## Tech Stack
 
 - **Framework**: React 18 with TypeScript
@@ -821,6 +843,46 @@ npm run dev
 ```
 
 However, API calls will fail due to CORS restrictions. For full functionality testing, you must build and load the extension.
+
+### CI/CD Pipeline
+
+The project includes automated builds via GitHub Actions (`.github/workflows/build-and-release.yml`):
+
+**Automated Builds:**
+- Triggers on push of version tags (e.g., `v1.0.0`)
+- Can also be manually triggered via `workflow_dispatch`
+- Builds the extension using Node.js 18
+- Creates separate ZIP files for Chrome and Firefox
+- Uploads build artifacts for testing (30-day retention)
+
+**Automated Releases:**
+- When a version tag is pushed, automatically creates a GitHub release
+- Attaches both Chrome and Firefox ZIP files to the release
+- Includes installation instructions in the release notes
+- Users can download pre-built extensions without needing Node.js or build tools
+
+**Creating a New Release:**
+```bash
+# 1. Update version in package.json and manifest.json
+# 2. Commit the version bump
+git add package.json public/manifest.json
+git commit -m "Bump version to 1.1.0"
+
+# 3. Create and push a version tag
+git tag v1.1.0
+git push origin v1.1.0
+
+# 4. GitHub Actions will automatically:
+#    - Build the extension
+#    - Create a GitHub release
+#    - Attach Chrome and Firefox ZIPs
+```
+
+**Benefits:**
+- Non-technical users can download pre-built extensions
+- Consistent, reproducible builds
+- No need to install Node.js or build tools for end users
+- Automated versioning and release notes
 
 ### API Testing Utility
 
